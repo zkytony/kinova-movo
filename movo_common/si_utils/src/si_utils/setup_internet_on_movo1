@@ -58,7 +58,7 @@ sudo iptables -t mangle -X
 iptables-save | sudo tee /etc/network/iptables.rules
 
 echo 1 | sudo tee /proc/sys/net/ipv4/ip_forward > /dev/null
-sudo iptables -t nat -A POSTROUTING -o eth1 -j MASQUERADE
+sudo iptables -t nat -A POSTROUTING -o wlan1 -j MASQUERADE
 
 iptables-save | sudo tee /etc/network/iptables.rules
 
