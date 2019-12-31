@@ -42,6 +42,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <gazebo>
         <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so"> 
 			<robotNamespace>/</robotNamespace>
+			<legacyModeNS>true</legacyModeNS>
         </plugin> 
         <plugin name="object_controller" filename="libgazebo_ros_force_based_move.so">
         	<robotNamespace>/</robotNamespace>
