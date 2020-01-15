@@ -6,8 +6,8 @@ find_package(catkin REQUIRED COMPONENTS roslaunch rospy)
 catkin_package()
 
 install(
-#  PROGRAMS
-#    scripts/example.py
+  PROGRAMS
+    scripts/init_robot.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
