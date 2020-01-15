@@ -2,19 +2,14 @@
 <launch>
     <arg name="limited" default="false"/>
     <arg name="paused" default="false"/>
-    <arg name="gui" default="true"/>
-    <arg name="world" default="worlds/empty.world"/>
+    <arg name="gui" default="false"/>
+    <arg name="world" default="worlds/tabletop_cube.world"/>
     <arg name="x"   default="0.0"/>
     <arg name="y"   default="0.0"/>
     <arg name="z"   default="0.0"/>
 
 	<!-- send robot urdf to param server -->
-	<include file="$(find movo_description)/launch/movo_upload.launch"/>
-    <rosparam if="$(optenv MOVO_HAS_KINOVA_ARM_6DOF false)" file="$(find movo_gazebo)/controller/gazebo_ros_control_gains.yaml" command="load"/>
-    <rosparam if="$(optenv MOVO_HAS_KINOVA_ARM_7DOF false)" file="$(find movo_gazebo)/controller/gazebo_ros_control_gains_7dof.yaml" command="load"/>
-    
-    <include if="$(optenv MOVO_HAS_KINOVA_ARM_6DOF false)" file="$(find movo_moveit_config)/launch/movo_moveit_planning_execution.launch"/>
-    <include if="$(optenv MOVO_HAS_KINOVA_ARM_7DOF false)" file="$(find movo_7dof_moveit_config)/launch/movo_moveit_planning_execution.launch"/>
+	<include file="$(find movo_description)/launch/movo_upload_no_arms.launch"/>
 
 	<!-- Robot state publisher -->
 	<node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher">
@@ -23,6 +18,8 @@
 	</node>
 
     <!-- startup simulated world -->
+    <env name="GAZEBO_MODEL_PATH" value="$(find movo_gazebo)/models:$(optenv GAZEBO_MODEL_PATH)"/>
+    <env name="GAZEBO_RESOURCE_PATH" value="$(find movo_gazebo):$(optenv GAZEBO_RESOURCE_PATH)"/>
     <include file="$(find gazebo_ros)/launch/empty_world.launch">
         <arg name="world_name" value="$(arg world)"/>
         <arg name="paused" value="$(arg paused)"/>
@@ -34,31 +31,15 @@
     <node name="spawn_gazebo_model" pkg="gazebo_ros" type="spawn_model" 
     args="-urdf -param /robot_description -model movo -x $(arg x) -y $(arg y) -z $(arg z)" 
     respawn="false" output="screen" />
-        
-    <rosparam if="$(optenv MOVO_HAS_KINOVA_ARM_6DOF false)" file="$(find movo_gazebo)/controller/right_arm_controller.yaml" command="load"/>
-    <rosparam if="$(optenv MOVO_HAS_KINOVA_ARM_7DOF false)" file="$(find movo_gazebo)/controller/right_arm_7dof_controller.yaml" command="load"/>
 
-    <rosparam if="$(optenv MOVO_HAS_KINOVA_ARM_6DOF false)" file="$(find movo_gazebo)/controller/left_arm_controller.yaml" command="load"/>
-    <rosparam if="$(optenv MOVO_HAS_KINOVA_ARM_7DOF false)" file="$(find movo_gazebo)/controller/left_arm_7dof_controller.yaml" command="load"/>
-
-    <rosparam file="$(find movo_gazebo)/controller/right_gripper_controller.yaml" command="load"/>
-    <rosparam file="$(find movo_gazebo)/controller/left_gripper_controller.yaml" command="load"/>
     <rosparam file="$(find movo_gazebo)/controller/head_controller.yaml" command="load"/>
     <rosparam file="$(find movo_gazebo)/controller/torso_controller.yaml" command="load"/>
     <rosparam file="$(find movo_gazebo)/controller/joint_state_controller.yaml" command="load"/>
     <node name="default_controller_spawner" pkg="controller_manager"
           type="controller_manager" args="spawn
-                               movo/right_arm_controller 
-                               movo/right_gripper_controller
-                               movo/left_arm_controller 
-                               movo/left_gripper_controller
                                movo/torso_controller
                                movo/head_controller
                                joint_state_controller"/>
-
-    <include file="$(find movo_bringup)/launch/teleop/movo_teleop.launch">
-        <arg name="sim" value="true"/>
-    </include>
     
     <node pkg="movo_gazebo" name="sim_odometry" type="sim_odometry" output="screen"/>
     
@@ -88,13 +69,6 @@
             </rosparam>
         </node>
     </group> 
-
-    <!-- With effort_controllers as hardware_interfaces, we have to manually set the position to 0
-    for each joint in Gazebo if we don't want to start MoveIt! with collisions and have the robot stuck -->
-    <!-- That is why the simulation is started as paused and is unpaused only in this script -->
-    <node pkg="movo_gazebo" type="set_joint_positions_to_zero.bash" name="set_joint_positions_to_zero" output="screen"/>
-    
-
 
     <!--node pkg="robot_self_filter"
         type="self_filter" clear_params="true"
