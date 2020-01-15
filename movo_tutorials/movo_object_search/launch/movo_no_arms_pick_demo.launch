@@ -3,10 +3,11 @@
     <arg name="limited" default="false"/>
     <arg name="paused" default="false"/>
     <arg name="gui" default="false"/>
-    <arg name="world" default="worlds/empty.world"/>
+    <arg name="world" default="worlds/tabletop_cube.world"/>
     <arg name="x"   default="0.0"/>
     <arg name="y"   default="0.0"/>
     <arg name="z"   default="0.0"/>
+    <arg name="rviz"  default="true"/>
 
 	<!-- send robot urdf to param server -->
 	<include file="$(find movo_description)/launch/movo_upload_no_arms.launch"/>
@@ -18,6 +19,8 @@
 	</node>
 
     <!-- startup simulated world -->
+    <env name="GAZEBO_MODEL_PATH" value="$(find movo_gazebo)/models:$(optenv GAZEBO_MODEL_PATH)"/>
+    <env name="GAZEBO_RESOURCE_PATH" value="$(find movo_gazebo):$(optenv GAZEBO_RESOURCE_PATH)"/>
     <include file="$(find gazebo_ros)/launch/empty_world.launch">
         <arg name="world_name" value="$(arg world)"/>
         <arg name="paused" value="$(arg paused)"/>
@@ -66,7 +69,24 @@
                 default_pointing_frame: movo_camera_link
             </rosparam>
         </node>
-    </group> 
+    </group>
+
+    <!-- marker detector -->
+    <node pkg="aruco_ros" type="single"  name="aruco_single">
+        <remap from="/camera_info"       to="/movo_camera/sd/camera_info" />
+        <remap from="/image"             to="/movo_camera/sd/image_color" />
+        <param name="image_is_rectified" value="True"/>
+        <param name="marker_size"        value="0.045"/>
+        <param name="marker_id"          value="582"/>
+        <param name="reference_frame"    value="/base_link"/>   <!-- frame in which the marker pose will be expressed -->
+        <param name="camera_frame"       value="movo_camera_ir_optical_frame"/>
+        <param name="marker_frame"       value="aruco_frame" />
+        <param name="corner_refinement"  value="SUBPIX" />
+    </node>
+
+    <group if="$(arg rviz)">
+        <node name="movo_object_search_rviz" pkg="rviz" type="rviz" args="-d $(find movo_object_search)/config/rviz/movo_no_arms_gazebo.rviz" />
+    </group>
 
     <!--node pkg="robot_self_filter"
         type="self_filter" clear_params="true"

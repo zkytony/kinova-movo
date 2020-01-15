@@ -46,7 +46,6 @@ import random
 from control_msgs.msg import (
     FollowJointTrajectoryAction,
     FollowJointTrajectoryGoal,
-    JointTrajectoryControllerState,
 )
 from trajectory_msgs.msg import (
     JointTrajectoryPoint,
