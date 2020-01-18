@@ -3,6 +3,8 @@ project(movo_object_search)
 
 find_package(catkin REQUIRED COMPONENTS roslaunch rospy)
 
+catkin_python_setup()
+
 catkin_package()
 
 install(

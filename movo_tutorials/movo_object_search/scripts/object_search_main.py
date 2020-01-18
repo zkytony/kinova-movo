@@ -2,14 +2,20 @@
 
 import argparse
 import sys
+import os
+from os.path import expanduser
 from copy import copy
 import rospy
 import actionlib
 import math
 import random
+import numpy as np
 from movo.system_defines import TRACTOR_REQUEST
 from geometry_msgs.msg import Twist
 from movo_msgs.msg import ConfigCmd
+from nav_msgs.msg import Odometry
+from tf.transformations import euler_from_quaternion, quaternion_from_euler
+from action.action import ActionApply
 
 from control_msgs.msg import (
     FollowJointTrajectoryAction,
@@ -22,6 +28,7 @@ from sensor_msgs.msg import JointState
 
 from control_msgs.msg import JointTrajectoryControllerState
 
+home = expanduser("~")
 
 class HeadJTASTest(object):
     def __init__(self):
@@ -84,40 +91,6 @@ class BaseMotionTest(object):
         self.rot_vel_tolerance = math.radians(1.0)
         self.duration_limit = 3600  # a motion dont plan for more than 1hour
 
-        # set robot mode to accept base motion via parameter _cfg_cmd
-        self._motion_vel([0.0, 0.0, 0.0], 0.0)
-
-    def _motion_vel(self, vel_cmd, duration):
-        """
-        publish velocity command to movo base for given time
-        @param vel_cmd: velocity command in [meter, meter, degree/second] along translation x, y and rotation z
-        @param duration: second
-        @return:
-        """
-        vel_cmd = map(float, vel_cmd)
-        duration = float(duration)
-
-        self._cfg_cmd.gp_cmd = 'GENERAL_PURPOSE_CMD_SET_OPERATIONAL_MODE'
-        self._cfg_cmd.gp_param = TRACTOR_REQUEST
-        self._cfg_cmd.header.stamp = rospy.get_rostime()
-        self._cfg_pub.publish(self._cfg_cmd)
-        rospy.sleep(0.1)
-
-        twist_cmd = Twist()
-        twist_cmd.linear.x = vel_cmd[0]
-        twist_cmd.linear.y = vel_cmd[1]
-        twist_cmd.linear.z = 0.0
-        twist_cmd.angular.x = 0.0
-        twist_cmd.angular.y = 0.0
-        twist_cmd.angular.z = math.radians(vel_cmd[2])
-
-        rospy.logdebug("Send velocity command to movo base from BaseVelTest class ...")
-        rate = rospy.Rate(100)
-        start_time = rospy.get_time()
-        while ((rospy.get_time() - start_time) < duration) and not (rospy.is_shutdown()):
-            self._base_vel_pub.publish(twist_cmd)
-            rate.sleep()
-
     def motion_dist(self, dist_cmd, vel_cmd=None):
         """
         Command the base to move certain distance
@@ -173,11 +146,26 @@ class BaseMotionTest(object):
         elif duration > self.duration_limit:
             rospy.logwarn("motion duration exceeded " + str(self.duration_limit) + " seconds, execution cancelled")
         else:
-            vel_cmd_mod = [0.0, 0.0, 0.0]
-            for i in range(0, len(dist_cmd)):
-                vel_cmd_mod[i] = dist_cmd[i]/duration * math.copysign(1.0, vel_cmd[i])
+            self._cfg_cmd.gp_cmd = 'GENERAL_PURPOSE_CMD_SET_OPERATIONAL_MODE'
+            self._cfg_cmd.gp_param = TRACTOR_REQUEST
+            self._cfg_cmd.header.stamp = rospy.get_rostime()
+            self._cfg_pub.publish(self._cfg_cmd)
+            rospy.sleep(0.1)
 
-            self._motion_vel(vel_cmd_mod, duration)
+            twist_cmd = Twist()
+            twist_cmd.linear.x = vel_cmd[0]
+            twist_cmd.linear.y = vel_cmd[1]
+            twist_cmd.linear.z = 0.0
+            twist_cmd.angular.x = 0.0
+            twist_cmd.angular.y = 0.0
+            twist_cmd.angular.z = math.radians(vel_cmd[2])
+
+            rospy.logdebug("Send velocity command to movo base from BaseVelTest class ...")
+            rate = rospy.Rate(100)
+            start_time = rospy.get_time()
+            while ((rospy.get_time() - start_time) < duration) and not (rospy.is_shutdown()):
+                self._base_vel_pub.publish(twist_cmd)
+                rate.sleep()
 
     def move_forward(self, meters, speed=None):
         if speed is None:
@@ -282,36 +270,118 @@ class TorsoJTASTest(object):
         self._goal.goal_time_tolerance = self._goal_time_tolerance
         self._goal.trajectory.joint_names = ['linear_joint']
 
-def main():
-    rospy.init_node('movo_search_object_init')
-    
-    # Head motion.
-    tmp_head = rospy.wait_for_message("/movo/head_controller/state", JointTrajectoryControllerState)
-    current_angles_head = tmp_head.desired.positions
-    print "current head angle:", current_angles_head
-    traj_head = HeadJTASTest()
-    traj_head.add_point(list(current_angles_head), 0.0)
-    
-    total_time_head = 0.0
-    points_head = [list(current_angles_head), 0.0]
-    for i in range(0,1):
-        
-        pos = [current_angles_head[0]+0,current_angles_head[1]+1.57] # [left and right (+:cw, -:ccw), up and down]. 0.78 = 45 degrees, 1.57 = 90 degrees.
-        vel = 0.3
-        
-        dt = 0.0
-        for i in range(2):
-            tmp = abs(pos[i])/vel
-            if (tmp > dt):
-                dt = tmp
-        total_time_head+=dt
-   
-        traj_head.add_point(pos,total_time_head)
-        
-    traj_head.start()
+class WorldModel(object):
+    def __init__(self, world_x_res, world_y_res, world_z_res, horizontal_cell_size, vertical_cell_size, odd_number):
+        self._grid_x = []
+        self._grid_y = []
+        self._grid_z = []
+        self._world_x_res = world_x_res
+        self._world_y_res = world_y_res
+        self._world_z_res = world_z_res
+        self._horizontal_cell_size = horizontal_cell_size
+        self._vertical_cell_size = vertical_cell_size
+        self._odd_number = odd_number
+        self._init_robot_pose_sub = rospy.Subscriber('/movo/odometry/local_filtered', Odometry, self.init_robot_pose_cb)
+        self._init_robot_pose_check = False
 
-    traj_head.wait(total_time_head+3.0)
-    print("Exiting - Joint Trajectory Action Test Complete")
+    def init_robot_pose_cb(self, data):
+        if not self._init_robot_pose_check:
+            thx, rthy, rthz = euler_from_quaternion([data.pose.pose.orientation.x, data.pose.pose.orientation.y, data.pose.pose.orientation.z, data.pose.pose.orientation.w])
+            init_robot_pose = (data.pose.pose.position.x, data.pose.pose.position.y, data.pose.pose.position.z, rthz)
+            print "Initial robot position: ", init_robot_pose
+
+            # Origin of the world.
+            if self._odd_number:
+                x_st = init_robot_pose[0]-(math.floor(self._world_x_res/2)*self._horizontal_cell_size)
+            else:
+                x_st = init_robot_pose[0]-((self._world_x_res/2-1)*self._horizontal_cell_size)
+            y_st = init_robot_pose[1]
+            z_st = 0
+
+            # Positions for all grid cells.
+            for i in range(0, self._world_x_res):
+                self._grid_x.append(x_st+self._horizontal_cell_size*i)
+            for i in range(0, self._world_y_res):
+                self._grid_y.append(y_st+self._horizontal_cell_size*i)
+            for i in range(0, self._world_z_res):
+                self._grid_z.append(z_st+self._vertical_cell_size*i)
+
+            self._init_robot_pose_check = True
+
+    def get_grid(self):
+        return self._grid_x, self._grid_y, self._grid_z
+
+    def get_init_robot_pose_check(self):
+        return self._init_robot_pose_check
+
+def main():
+    rospy.init_node('movo_object_search_main')
+    num_regions = rospy.get_param('~num_regions')
+    world_x_res = rospy.get_param('~world_x_res')
+    world_y_res = rospy.get_param('~world_y_res')
+    world_z_res = rospy.get_param('~world_z_res')
+    horizontal_cell_size = rospy.get_param('~horizontal_cell_size')
+    vertical_cell_size = rospy.get_param('~vertical_cell_size')
+    trans_vel = rospy.get_param('~trans_vel')
+    ang_vel = rospy.get_param('~ang_vel')
+    goal_pose_tolerance = rospy.get_param('~goal_pose_tolerance')
+    goal_angle_tolerance = rospy.get_param('~goal_angle_tolerance')
+    if np.remainder(world_x_res,2) == 1:
+        odd_number = True
+    else:
+        odd_number = False
+
+    for i in range(0,num_regions):
+        wm = WorldModel(world_x_res, world_y_res, world_z_res, horizontal_cell_size, vertical_cell_size, odd_number)
+        r = rospy.Rate(10)
+        while True:
+            if wm.get_init_robot_pose_check():
+                break
+            r.sleep()
+        grid_x, grid_y, grid_z = wm.get_grid()
+
+        # Read the text file from the pomdp solver.
+
+        aa = ActionApply(grid_x, grid_y, grid_z, trans_vel, ang_vel, goal_pose_tolerance, goal_angle_tolerance, 1, 0, 0, -90)
+        while True:
+            if aa.get_cur_robot_pose_check():
+                break
+            r.sleep()
+        aa.compute_action()
+
+        # Write the text file to update observations for the pomdp solver.
+
+    # Torso motion.
+    # tmp_torso = rospy.wait_for_message("/movo/torso_controller/state", JointTrajectoryControllerState)
+    # current_angles_torso = tmp_torso.desired.positions
+    # print "current torso angle:", current_angles_torso
+    # traj_torso = TorsoJTASTest()
+    # traj_torso.add_point(list(current_angles_torso), 0.0)
+    
+    # total_time_torso = 0.0
+    # points_torso = [list(current_angles_torso), 0.0]
+    # for i in range(0,1):
+        
+    #     pos = 0.3 # Maximum height: 0.4.
+    #     vel = 0.05
+        
+    #     dt = abs(pos)/vel
+    #     total_time_torso+=dt
+   
+    #     traj_torso.add_point([pos],total_time_torso)
+        
+    # traj_torso.start()
+
+    # traj_torso.wait(total_time_torso+3.0)
+    # print("Exiting - Joint Trajectory Action Test Complete")
+
+    # Base motion.
+    # b_test = BaseMotionTest()
+    # print ("Right")
+    # b_test.rotate_anticlock(90,30) # (degree,angular velocity)
+    # b_test.motion_stop()
+    # b_test.move_forward(0.3,0.3) # (distance,transitional velocity)
+    # b_test.motion_stop()
 
 if __name__ == "__main__":
     main()
