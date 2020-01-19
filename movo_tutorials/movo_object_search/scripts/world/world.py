@@ -47,5 +47,5 @@ class WorldModel(object):
     def get_grid(self):
         return self._grid_x, self._grid_y, self._grid_z
 
-    def get_init_robot_pose_check(self):
+    def check_init_robot_pose(self):
         return self._init_robot_pose_check
