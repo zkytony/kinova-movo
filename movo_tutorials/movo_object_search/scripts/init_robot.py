@@ -296,7 +296,7 @@ def main():
     points_head = [list(current_angles_head), 0.0]
     for i in range(0,1):
         
-        pos = [current_angles_head[0]+0,current_angles_head[1]+1.57] # [left and right (+:cw, -:ccw), up and down]. 0.78 = 45 degrees, 1.57 = 90 degrees.
+        pos = [current_angles_head[0]+0,0.0]#current_angles_head[1]+1.57] # [left and right (+:cw, -:ccw), up and down]. 0.78 = 45 degrees, 1.57 = 90 degrees.
         vel = 0.3
         
         dt = 0.0
