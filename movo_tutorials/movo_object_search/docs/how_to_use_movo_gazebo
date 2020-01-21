@@ -1,5 +1,5 @@
 How to run:
-0. source /movo_ws/devel/setup.bash
+0. source ~/movo_ws/devel/setup.bash
 1. roslaunch movo_object_search movo_no_arms_pick_demo.launch
 2. rosrun  movo_object_search init_robot.py
 3. roslaunch movo_object_search movo_object_search.launch
