@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <launch>
     <arg name="limited" default="false"/>
-    <arg name="paused" default="false"/>
+    <arg name="paused" default="true"/>
     <arg name="gui" default="true"/>
     <arg name="world" default="worlds/empty.world"/>
     <arg name="x"   default="0.0"/>
@@ -56,9 +56,9 @@
                                movo/head_controller
                                joint_state_controller"/>
 
-    <include file="$(find movo_bringup)/launch/teleop/movo_teleop.launch">
+    <!-- <include file="$(find movo_bringup)/launch/teleop/movo_teleop.launch">
         <arg name="sim" value="true"/>
-    </include>
+    </include> -->
     
     <node pkg="movo_gazebo" name="sim_odometry" type="sim_odometry" output="screen"/>
     
