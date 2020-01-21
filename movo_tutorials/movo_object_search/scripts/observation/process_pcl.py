@@ -1,4 +1,5 @@
 ### Listens to point cloud and process it
+import argparse
 import rospy
 import sensor_msgs.point_cloud2
 from visualization_msgs.msg import Marker, MarkerArray
@@ -23,21 +24,23 @@ class PCLProcessor:
                  near=1,
                  far=5,
                  resolution=0.5,  # m/grid cell
-                 topic="/movo_camera/point_cloud/points",
+                 pcl_topic="/movo_camera/point_cloud/points",
+                 marker_topic="/movo_pcl_processor/observation_markers",
                  sparsity=1000,
-                 occupied_threshold=5):
-        self._topic = topic
+                 occupied_threshold=5,
+                 real_robot=False):
+        self._real_robot = real_robot
         self._resolution = resolution
         self._sparsity = sparsity  # number of points to skip
         self._occupied_threshold = occupied_threshold
         self._cam = FrustumCamera(fov=fov, aspect_ratio=aspect_ratio,
                                   near=near, far=far)
-        self._sub_pcl = rospy.Subscriber(topic, PointCloud2,
+        self._sub_pcl = rospy.Subscriber(pcl_topic, PointCloud2,
                                          self._pcl_cb)#, callback_args=(self._cam))
         self._processed_point_cloud = False
 
         # Publish processed point cloud
-        self._pub_pcl = rospy.Publisher("/movo_pcl_processor/observation_markers",
+        self._pub_pcl = rospy.Publisher(marker_topic,
                                         MarkerArray,
                                         queue_size=10,
                                         latch=True)
@@ -160,7 +163,10 @@ class PCLProcessor:
             
             h = Header()
             h.stamp = timestamp
-            h.frame_id = "movo_camera_color_optical_frame"
+            if self._real_robot:
+                h.frame_id = "movo_camera_color_optical_frame"
+            else:
+                h.frame_id = "movo_camera_color_frame"
             
             marker_msg = Marker()
             marker_msg.header = h
@@ -198,6 +204,14 @@ class PCLProcessor:
 
 
 def main():
+    parser = argparse.ArgumentParser(description='Process Point Cloud as Volumetric Observation')
+    parser.add_argument('-p', '--point-cloud-topic', type=str,
+                        default="/movo_camera/sd/points")
+    parser.add_argument('-m', '--marker-topic', type=str,
+                        default="/movo_pcl_processor/observation_markers")
+    parser.add_argument('-R', '--real-robot', action="store_true")
+    args = parser.parse_args()
+    
     rospy.init_node("movo_pcl_processor",
                     anonymous=True, disable_signals=True)
 
@@ -210,7 +224,10 @@ def main():
     # of 84.1 x 53.8 resulting in an average of about 22 x 20 pixels per degree. (see source 2)
     proc = PCLProcessor(fov=60, aspect_ratio=1.0,
                         near=1.0, far=7, resolution=0.3,
-                        sparsity=500, occupied_threshold=3)  # this covers a range from about 0.32m - 4m
+                        sparsity=500, occupied_threshold=3,
+                        pcl_topic=args.point_cloud_topic,
+                        marker_topic=args.marker_topic,
+                        real_robot=args.real_robot)  # this covers a range from about 0.32m - 4m
     rospy.spin()
 
 if __name__ == "__main__":
