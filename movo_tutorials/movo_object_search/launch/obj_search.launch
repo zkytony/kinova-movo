@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <launch>
-    <node pkg="movo_object_search" type="object_search_main.py"  name="object_search_main" output="screen" >
+    <node pkg="movo_object_search" type="obj_search_main.py"  name="obj_search" output="screen" >
         <param name="num_regions" value="1"/>
         <param name="object_marker_id" value="[0, 1]"/>
 
@@ -11,8 +11,6 @@
         <param name="vertical_cell_size" value="0.2"/>
         <param name="trans_vel" value="0.3"/>
         <param name="ang_vel" value="30"/>
-        <param name="goal_pose_tolerance" value="0.05"/>
-        <param name="goal_angle_tolerance" value="0.3"/>
 
         <rosparam file="$(find movo_object_search)/config/yaml/regions_info.yaml" />
     </node>
