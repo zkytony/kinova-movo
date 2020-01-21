@@ -1,5 +1,4 @@
 region_0: {
-  marker_id: 2,
-  x_pose: 5.5,
-  y_pose: 3.5,
+  position: [5.5, 3.5],
+  orientation: [0.0, 0.0, 0.0, 1.0]
 }
