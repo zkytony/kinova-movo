@@ -18,6 +18,8 @@
 	</node>
 
     <!-- startup simulated world -->
+    <!-- <env name="GAZEBO_MODEL_PATH" value="$(find movo_gazebo)/models:$(optenv GAZEBO_MODEL_PATH)"/>
+    <env name="GAZEBO_RESOURCE_PATH" value="$(find movo_gazebo):$(optenv GAZEBO_RESOURCE_PATH)"/> -->
     <include file="$(find gazebo_ros)/launch/empty_world.launch">
         <arg name="world_name" value="$(arg world)"/>
         <arg name="paused" value="$(arg paused)"/>
@@ -38,6 +40,10 @@
                                movo/torso_controller
                                movo/head_controller
                                joint_state_controller"/>
+
+    <include file="$(find movo_bringup)/launch/teleop/movo_teleop.launch">
+        <arg name="sim" value="true"/>
+    </include>
     
     <node pkg="movo_gazebo" name="sim_odometry" type="sim_odometry" output="screen"/>
     

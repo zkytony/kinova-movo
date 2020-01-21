@@ -56,10 +56,6 @@
       <uri>model://aruco_visual_marker_1</uri>
       <pose>7.9 6.6 1.3 0 0 0</pose>
     </include>
-    <include>
-      <uri>model://aruco_visual_marker_2</uri>
-      <pose>6.0 4 1.0 0 0 0</pose>
-    </include>
     <!-- Boxes -->
     <include>
       <uri>model://box</uri>
