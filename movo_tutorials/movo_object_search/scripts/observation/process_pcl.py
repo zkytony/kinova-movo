@@ -42,10 +42,8 @@ class PCLProcessor:
                  voxel_pose_frame="movo_camera_color_optical_frame",
                  sparsity=1000,
                  occupied_threshold=5,
-                 real_robot=False,
                  mark_nearby=False,  # mark voxels within 1 distance of the artag voxel as well.
                  mark_ar_tag=True):  # true if use message filter to process ar tag and point cloud messages together
-        self._real_robot = real_robot
         self._resolution = resolution
         self._sparsity = sparsity  # number of points to skip
         self._occupied_threshold = occupied_threshold
@@ -64,7 +62,7 @@ class PCLProcessor:
         if self._mark_ar_tag:
             self._sub_artag = message_filters.Subscriber(artag_topic, ArMarkerArray)
             self._pcl_artag_ats = message_filters.ApproximateTimeSynchronizer([self._sub_pcl, self._sub_artag],
-                                                                              5,1)#queue_size=10, slop=1.0)
+                                                                              20, 5)#queue_size=10, slop=1.0)
             self._pcl_artag_ats.registerCallback(self._pcl_artag_cb)            
         else:
             self._sub_pcl.registerCallback(self._pcl_cb)        
@@ -93,6 +91,7 @@ class PCLProcessor:
 
     def _pcl_artag_cb(self, pcl_msg, artag_msg):
         """Called when received an artag message and a point cloud."""
+        import pdb; pdb.set_trace()
         if self._processing_point_cloud:
             return
         else:
@@ -243,7 +242,7 @@ class PCLProcessor:
                 marker_msg.color.r = 0.0
                 marker_msg.color.g = 0.8
                 marker_msg.color.b = 0.8
-                marker_msg.color.a = 0.1
+                marker_msg.color.a = 0.2
             elif label == VOXEL_UNKNOWN:  # grey
                 marker_msg.color.r = 0.8
                 marker_msg.color.g = 0.8
@@ -270,7 +269,6 @@ def main():
                         default="/movo_camera/sd/points")
     parser.add_argument('-m', '--marker-topic', type=str,
                         default="/movo_pcl_processor/observation_markers")
-    parser.add_argument('-R', '--real-robot', action="store_true")
     parser.add_argument('-M', '--mark-ar-tag', action="store_true")    
     args = parser.parse_args()
     
@@ -289,7 +287,6 @@ def main():
                         sparsity=500, occupied_threshold=3,
                         pcl_topic=args.point_cloud_topic,
                         marker_topic=args.marker_topic,
-                        real_robot=args.real_robot,
                         mark_ar_tag=args.mark_ar_tag)  # this covers a range from about 0.32m - 4m
     rospy.spin()
 

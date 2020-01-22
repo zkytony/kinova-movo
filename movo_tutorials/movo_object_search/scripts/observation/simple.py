@@ -19,11 +19,10 @@ def cb2(msg):
 def main():
 
     sub1 = message_filters.Subscriber("/ground_truth_odom", Odometry)
-    sub2 = rospy.Subscriber("/aruco_marker_publisher/markers", ArMarkerArray,
-                            cb2)
-    # ats = message_filters.ApproximateTimeSynchronizer([sub1, sub2],
-    #                                                   5,1)#queue_size=10, slop=1.0)
-    # ats.registerCallback(cb)
+    sub2 = message_filters.Subscriber("/aruco_marker_publisher/markers", ArMarkerArray)
+    ats = message_filters.ApproximateTimeSynchronizer([sub1, sub2],
+                                                      5,1)#queue_size=10, slop=1.0)
+    ats.registerCallback(cb)
     
     rospy.init_node("movo_stupid_test",
                     anonymous=True, disable_signals=True)

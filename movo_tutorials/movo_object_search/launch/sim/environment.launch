@@ -10,6 +10,15 @@
 
     <!-- startup simulated world -->
     <env name="GAZEBO_MODEL_PATH" value="$(find movo_gazebo)/models:$(optenv GAZEBO_MODEL_PATH)"/>
+    <env name="GAZEBO_RESOURCE_PATH" value="$(find movo_gazebo):$(optenv GAZEBO_RESOURCE_PATH)"/>
+
+    <!-- <!-\- startup simulated world -\-> -->
+    <!-- <include file="$(find gazebo_ros)/launch/empty_world.launch"> -->
+    <!--     <arg name="world_name" value="$(arg world)"/> -->
+    <!--     <arg name="paused" value="$(arg paused)"/> -->
+    <!--     <arg name="gui" value="$(arg gui)"/> -->
+    <!--     <arg name="verbose" value="true" /> -->
+    <!-- </include>     -->
 
     <include file="$(find movo_gazebo)/launch/movo.launch">
         <arg name="world" value="$(find movo_gazebo)/$(arg world)"/>
@@ -19,5 +28,5 @@
         <arg name="x"   value="$(arg x)"/>
         <arg name="y"   value="$(arg y)"/>
         <arg name="z"   value="$(arg z)"/>
-    </include>    
+    </include>
 </launch>

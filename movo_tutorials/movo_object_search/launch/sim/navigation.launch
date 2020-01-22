@@ -1,6 +1,6 @@
 <!-- Launches the necessary components for navigation -->
 <launch>
-  <arg name="map_file" default="test_tabletop"/>
+  <arg name="map_file" default="test_simple"/>
   
   <include file="$(find movo_demos)/launch/nav/map_nav.launch">
     <arg name="map_file" value="$(arg map_file)"/>

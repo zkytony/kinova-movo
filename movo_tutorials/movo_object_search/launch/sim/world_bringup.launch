@@ -37,5 +37,4 @@
     <param name="corner_refinement"  value="SUBPIX" />
   </node>
   
-  
 </launch>
