@@ -3,20 +3,32 @@ import argparse
 import rospy
 import sensor_msgs.point_cloud2
 from visualization_msgs.msg import Marker, MarkerArray
+from aruco_msgs.msg import MarkerArray as ArMarkerArray
 from std_msgs.msg import Header
 from sensor_msgs.msg import PointCloud2
-from geometry_msgs.msg import Pose
+from geometry_msgs.msg import Pose, PoseStamped
+import message_filters
+import tf
+import util
 
 import time
 from camera_model import FrustumCamera
 
-VOXEL_OCCUPIED = 0  # TODO: Should replace this by object id
-VOXEL_FREE = -1
-VOXEL_UNKNOWN = -2
+# THE VOXEL TYPE; If > 0, it's an object id.
+VOXEL_OCCUPIED = -1
+VOXEL_FREE = -2
+VOXEL_UNKNOWN = -3
 
 # A very good ROS Ask question about the point cloud message
 # https://answers.ros.org/question/273182/trying-to-understand-pointcloud2-msg/
 class PCLProcessor:
+    """
+    Subscribes to point cloud and ar tag topics, and publish volumetric
+    observation as a result of processing the messages.
+
+    The reason to use Subscriber inteader of Client/Service is because
+    point cloud data and ar tag markers themselves are published via topics.
+    """
     def __init__(self,
                  # frustum camera configuration
                  fov=90,
@@ -26,19 +38,38 @@ class PCLProcessor:
                  resolution=0.5,  # m/grid cell
                  pcl_topic="/movo_camera/point_cloud/points",
                  marker_topic="/movo_pcl_processor/observation_markers",
+                 artag_topic="/aruco_marker_publisher/markers",
+                 voxel_pose_frame="movo_camera_color_optical_frame",
                  sparsity=1000,
                  occupied_threshold=5,
-                 real_robot=False):
+                 real_robot=False,
+                 mark_nearby=False,  # mark voxels within 1 distance of the artag voxel as well.
+                 mark_ar_tag=True):  # true if use message filter to process ar tag and point cloud messages together
         self._real_robot = real_robot
         self._resolution = resolution
         self._sparsity = sparsity  # number of points to skip
         self._occupied_threshold = occupied_threshold
+        self._voxel_pose_frame = voxel_pose_frame
+        self._mark_nearby = mark_nearby
+        self._mark_ar_tag = mark_ar_tag
         self._cam = FrustumCamera(fov=fov, aspect_ratio=aspect_ratio,
                                   near=near, far=far)
-        self._sub_pcl = rospy.Subscriber(pcl_topic, PointCloud2,
-                                         self._pcl_cb)#, callback_args=(self._cam))
-        self._processed_point_cloud = False
-
+        # Listen to tf
+        self._tf_listener = tf.TransformListener()
+        
+        # The AR tag message and point cloud message are synchronized using
+        # message filter. The point cloud message also has its own callback,
+        # in case there is no AR tag detected.
+        self._sub_pcl = message_filters.Subscriber(pcl_topic, PointCloud2)
+        if self._mark_ar_tag:
+            self._sub_artag = message_filters.Subscriber(artag_topic, ArMarkerArray)
+            self._pcl_artag_ats = message_filters.ApproximateTimeSynchronizer([self._sub_pcl, self._sub_artag],
+                                                                              5,1)#queue_size=10, slop=1.0)
+            self._pcl_artag_ats.registerCallback(self._pcl_artag_cb)            
+        else:
+            self._sub_pcl.registerCallback(self._pcl_cb)        
+        self._processing_point_cloud = False
+        
         # Publish processed point cloud
         self._pub_pcl = rospy.Publisher(marker_topic,
                                         MarkerArray,
@@ -46,19 +77,61 @@ class PCLProcessor:
                                         latch=True)
 
     def _pcl_cb(self, msg):
-        # We just process one point cloud message.
-        if self._processed_point_cloud:
-            self._processed_point_cloud = False
-        if not self._processed_point_cloud:
+        # We just process one point cloud message at a time.
+        if self._processing_point_cloud:
+            return
+        else:
+            self._processing_point_cloud = True
             voxels = self.process_cloud(msg)
             msg = self.make_markers_msg(voxels)
             # publish message
             r = rospy.Rate(3) # 3 Hz
             self._pub_pcl.publish(msg)
             print("Published markers")
-            self._processed_point_cloud = True
+            self._processing_point_cloud = False
             r.sleep()
 
+    def _pcl_artag_cb(self, pcl_msg, artag_msg):
+        """Called when received an artag message and a point cloud."""
+        if self._processing_point_cloud:
+            return
+        else:
+            self._processing_point_cloud = True
+            voxels = self.process_cloud(pcl_msg)
+
+            # Mark voxel at artag location as object
+            for artag in artag_msg.markers:
+                # Transform pose to voxel_pose_frame
+                artag_pose = self._get_transform(self._voxel_pose_frame, artag.header.frame_id, artag.pose.pose)
+                if artag_pose is False:
+                    return # no transformed pose obtainable
+                atx = artag_pose.position.x
+                aty = artag_pose.position.y
+                atz = artag_pose.position.z
+                arvoxel_pose = (int(round(atx / self._resolution)),
+                                int(round(aty / self._resolution)),
+                                int(round(atz / self._resolution)))
+                # (Approach1) Find the voxel_pose in the volume closest to above
+                if not self._mark_nearby:
+                    closest_voxel_pose = min(voxels, key=lambda voxel_pose: util.euclidean_dist(voxel_pose, arvoxel_pose))
+                    voxels[closest_voxel_pose] = (closest_voxel_pose, artag.id)
+                else:
+                    # (Approach2) Mark all voxel_poses in the volume within a certain dist.
+                    nearby_voxel_poses = {voxel_pose
+                                          for voxel_pose in voxels
+                                          if util.euclidean_dist(voxel_pose, arvoxel_pose) <= 1}
+                    for voxel_pose in nearby_voxel_poses:
+                        voxels[voxel_pose] = (voxel_pose, artag.id)
+                
+            msg = self.make_markers_msg(voxels)
+            
+            # publish message
+            r = rospy.Rate(3) # 3 Hz
+            self._pub_pcl.publish(msg)
+            print("Published markers")
+            self._processing_point_cloud = False
+            r.sleep()
+    
 
     def point_in_volume(self, voxel, point):
         """Check if point (in point cloud) is inside the volume covered by voxel"""
@@ -77,13 +150,26 @@ class PCLProcessor:
             return True
         else:
             return False
+        
+    def _get_transform(self, target_frame, source_frame, pose_msg):
+        # http://wiki.ros.org/tf/TfUsingPython
+        if self._tf_listener.frameExists(source_frame)\
+           and self._tf_listener.frameExists(target_frame):
+            pose_stamped_msg = PoseStamped()
+            pose_stamped_msg.header.frame_id = source_frame
+            pose_stamped_msg.pose = pose_msg
+            pose_stamped_transformed = self._tf_listener.transformPose(target_frame, pose_stamped_msg)
+            return pose_stamped_transformed.pose
+        else:
+            rospy.logwarn("Frame %s or %s does not exist. (Check forward slash?)" % (target_frame, source_frame))
+            return False
 
     def process_cloud(self, msg):
         # Iterate over the voxels in the FOV
         points = []
         for point in sensor_msgs.point_cloud2.read_points(msg, skip_nans=True):
             points.append(point)
-        voxels = []
+        voxels = {}  # map from voxel_pose xyz to label
         oalt = {}
         pesp_to_plel = {}  # map from xyz in perspective to xy key in parallel
         for xyz in self._cam.volume:
@@ -103,43 +189,16 @@ class PCLProcessor:
                             occupied = True
                             break
                 i += 1
-            if occupied:
-                voxels.append((xyz, VOXEL_OCCUPIED))
-                xyz2 = [xyz[0], xyz[1], xyz[2]+1]
-                voxels.append((xyz2, VOXEL_UNKNOWN))
-            else:
-                voxels.append((xyz, VOXEL_FREE))
-        #     # Project the voxel to parallel space and
-        #     # obtain a mapping from xy_key to z_depth.
-        #     # Then use this mapping to account for occlusions
-        #     x,y,_ = map(float,xyz[:3]); z = original_z #-abs(xyz[2])  # camera model looks at -z direction
-        #     parallel_point = self._cam.perspectiveTransform(x, y, z, (0,0,0,0,0,0))
-        #                                                     # (0,0,0,0,0,0,1))  # point is already in camera space
-        #     xy_key = (round(parallel_point[0], 2), round(parallel_point[1], 2))                                                            
-        #     if(xy_key not in oalt.keys()):
-        #         # primitive of oalt: { (x,y) : occupied (or, objid), cube_depth}
-        #         oalt[xy_key] = (occupied, parallel_point[2])
-        #     else:
-        #         # update the z index if the point is closer
-        #         oalt[xy_key] = (occupied, min(oalt[xy_key][1], parallel_point[2])) # since camera looks at +z direction
-        #     pesp_to_plel[tuple(xyz)] = (xy_key, parallel_point[2])
 
-        # # Figure out the final voxel labels (if the voxel is occluded,
-        # # or free, or occupied) based on its z-index in the parallel
-        # # projection space. There is some loss here, but, because the
-        # # volumetric observation is already coarse, the loss should be acceptable.
-        # output_voxels = []
-        # for xyz, occupied in voxels:
-        #     if occupied:
-        #         voxel = (xyz, VOXEL_OCCUPIED)
-        #     else:
-        #         xy_key, z_point = pesp_to_plel[tuple(xyz)]
-        #         if z_point > oalt[xy_key][1]: # and oalt[xy_key][0] is True:
-        #             # the point is occluded
-        #             voxel = (xyz, VOXEL_UNKNOWN)
-        #         else:
-        #             voxel = (xyz, VOXEL_FREE)
-        #     output_voxels.append(voxel)
+            # forget about the homogenous coordinate; use xyz as key                
+            xyz = tuple(xyz[:3])
+            if occupied:
+                xyz2 = (xyz[0], xyz[1], xyz[2]+1)  # TODO: HACK
+                voxels[xyz] = (xyz, VOXEL_OCCUPIED)
+                voxels[xyz2] = (xyz2, VOXEL_UNKNOWN)                
+            else:
+                voxels[xyz] = (xyz, VOXEL_FREE)
+        # TODO: Actually do frustum filter
         return voxels
 
     def _make_pose_msg(self, posit, orien):
@@ -158,15 +217,12 @@ class PCLProcessor:
         timestamp = rospy.Time.now()
         i = 0
         markers = []
-        for voxel in voxels:
-            xyz, label = voxel
+        for voxel_pose in voxels:
+            xyz, label = voxels[voxel_pose]
             
             h = Header()
             h.stamp = timestamp
-            if self._real_robot:
-                h.frame_id = "movo_camera_color_optical_frame"
-            else:
-                h.frame_id = "movo_camera_color_frame"
+            h.frame_id = self._voxel_pose_frame
             
             marker_msg = Marker()
             marker_msg.header = h
@@ -193,6 +249,11 @@ class PCLProcessor:
                 marker_msg.color.g = 0.8
                 marker_msg.color.b = 0.8
                 marker_msg.color.a = 0.7
+            elif label >= 0:  # it's an object. Mark as Green
+                marker_msg.color.r = 0.0
+                marker_msg.color.g = 0.8
+                marker_msg.color.b = 0.0
+                marker_msg.color.a = 1.0
             else:
                 raise ValueError("Unknown voxel label %s" % str(label))
             marker_msg.lifetime = rospy.Duration.from_sec(3.0)  # forever
@@ -210,6 +271,7 @@ def main():
     parser.add_argument('-m', '--marker-topic', type=str,
                         default="/movo_pcl_processor/observation_markers")
     parser.add_argument('-R', '--real-robot', action="store_true")
+    parser.add_argument('-M', '--mark-ar-tag', action="store_true")    
     args = parser.parse_args()
     
     rospy.init_node("movo_pcl_processor",
@@ -227,7 +289,8 @@ def main():
                         sparsity=500, occupied_threshold=3,
                         pcl_topic=args.point_cloud_topic,
                         marker_topic=args.marker_topic,
-                        real_robot=args.real_robot)  # this covers a range from about 0.32m - 4m
+                        real_robot=args.real_robot,
+                        mark_ar_tag=args.mark_ar_tag)  # this covers a range from about 0.32m - 4m
     rospy.spin()
 
 if __name__ == "__main__":

@@ -7,12 +7,13 @@ Panels:
         - /Global Options1
         - /Status1
         - /TF1/Frames1
+        - /Sensing1
         - /Sensing1/PointCloud21
         - /Navigation1/Global Plan1
         - /Image1
-        - /PlanningScene1
-      Splitter Ratio: 0.485465
-    Tree Height: 815
+        - /Image2
+      Splitter Ratio: 0.48546499
+    Tree Height: 436
   - Class: rviz/Selection
     Name: Selection
   - Class: rviz/Tool Properties
@@ -21,7 +22,7 @@ Panels:
       - /2D Nav Goal1
       - /Publish Point1
     Name: Tool Properties
-    Splitter Ratio: 0.588679
+    Splitter Ratio: 0.588679016
   - Class: rviz/Views
     Expanded:
       - /Current View1
@@ -32,6 +33,8 @@ Panels:
     Name: Time
     SyncMode: 0
     SyncSource: LaserScan
+Toolbars:
+  toolButtonStyle: 2
 Visualization Manager:
   Class: ""
   Displays:
@@ -41,7 +44,7 @@ Visualization Manager:
       Color: 160; 160; 164
       Enabled: true
       Line Style:
-        Line Width: 0.03
+        Line Width: 0.0299999993
         Value: Lines
       Name: Grid
       Normal Cell Count: 0
@@ -85,21 +88,45 @@ Visualization Manager:
       Value: false
     - Class: rviz/Group
       Displays:
-        - Angle Tolerance: 0.1
+        - Angle Tolerance: 0.100000001
           Class: rviz/Odometry
-          Color: 85; 170; 255
+          Covariance:
+            Orientation:
+              Alpha: 0.5
+              Color: 255; 255; 127
+              Color Style: Unique
+              Frame: Local
+              Offset: 1
+              Scale: 1
+              Value: true
+            Position:
+              Alpha: 0.300000012
+              Color: 204; 51; 204
+              Scale: 1
+              Value: true
+            Value: true
           Enabled: true
           Keep: 100
-          Length: 0.1
           Name: Odometry
-          Position Tolerance: 0.1
+          Position Tolerance: 0.100000001
+          Shape:
+            Alpha: 1
+            Axes Length: 1
+            Axes Radius: 0.100000001
+            Color: 255; 25; 0
+            Head Length: 0.300000012
+            Head Radius: 0.100000001
+            Shaft Length: 1
+            Shaft Radius: 0.0500000007
+            Value: Arrow
           Topic: /movo/odometry/local_filtered
+          Unreliable: false
           Value: true
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
-            Max Value: 0.40593
-            Min Value: 0.40593
+            Max Value: 0.405930012
+            Min Value: 0.405930012
             Value: true
           Axis: Z
           Channel Name: intensity
@@ -112,13 +139,13 @@ Visualization Manager:
           Max Color: 255; 255; 255
           Max Intensity: 999999
           Min Color: 0; 0; 0
-          Min Intensity: -1.83101e-36
+          Min Intensity: -1.83101002e-36
           Name: LaserScan
           Position Transformer: XYZ
           Queue Size: 10
           Selectable: true
           Size (Pixels): 3
-          Size (m): 0.03
+          Size (m): 0.0299999993
           Style: Flat Squares
           Topic: /movo/base_scan_filtered
           Unreliable: false
@@ -140,17 +167,17 @@ Visualization Manager:
           Enabled: true
           Invert Rainbow: false
           Max Color: 255; 255; 255
-          Max Intensity: 8.13733
+          Max Intensity: 8.13733006
           Min Color: 0; 0; 0
-          Min Intensity: -8.05903
+          Min Intensity: -8.05902958
           Name: PointCloud2
           Position Transformer: XYZ
           Queue Size: 1000
           Selectable: true
           Size (Pixels): 3
-          Size (m): 0.01
+          Size (m): 0.00999999978
           Style: Flat Squares
-          Topic: /kinect2/qhd/points
+          Topic: /movo_camera/sd/points
           Unreliable: false
           Use Fixed Frame: true
           Use rainbow: true
@@ -182,7 +209,7 @@ Visualization Manager:
       Name: Sensing
     - Class: rviz/Group
       Displays:
-        - Alpha: 0.7
+        - Alpha: 0.699999988
           Class: rviz/Map
           Color Scheme: map
           Draw Behind: true
@@ -190,8 +217,9 @@ Visualization Manager:
           Name: Static Map
           Topic: /map
           Unreliable: false
+          Use Timestamp: false
           Value: true
-        - Alpha: 0.7
+        - Alpha: 0.699999988
           Class: rviz/Map
           Color Scheme: costmap
           Draw Behind: true
@@ -199,8 +227,9 @@ Visualization Manager:
           Name: Global Costmap
           Topic: /move_base/global_costmap/costmap
           Unreliable: false
+          Use Timestamp: false
           Value: true
-        - Alpha: 0.7
+        - Alpha: 0.699999988
           Class: rviz/Map
           Color Scheme: costmap
           Draw Behind: false
@@ -208,17 +237,18 @@ Visualization Manager:
           Name: Local Costmap
           Topic: /move_base/local_costmap/costmap
           Unreliable: false
+          Use Timestamp: false
           Value: true
         - Alpha: 1
           Buffer Length: 1
           Class: rviz/Path
           Color: 25; 255; 0
           Enabled: true
-          Head Diameter: 0.3
-          Head Length: 0.2
-          Length: 0.3
+          Head Diameter: 0.300000012
+          Head Length: 0.200000003
+          Length: 0.300000012
           Line Style: Lines
-          Line Width: 0.03
+          Line Width: 0.0299999993
           Name: Global Plan
           Offset:
             X: 0
@@ -226,9 +256,9 @@ Visualization Manager:
             Z: 0
           Pose Color: 255; 85; 255
           Pose Style: None
-          Radius: 0.03
-          Shaft Diameter: 0.1
-          Shaft Length: 0.1
+          Radius: 0.0299999993
+          Shaft Diameter: 0.100000001
+          Shaft Length: 0.100000001
           Topic: /move_base/DWAPlannerROS/global_plan
           Unreliable: false
           Value: true
@@ -237,11 +267,11 @@ Visualization Manager:
           Class: rviz/Path
           Color: 255; 0; 0
           Enabled: true
-          Head Diameter: 0.3
-          Head Length: 0.2
-          Length: 0.3
+          Head Diameter: 0.300000012
+          Head Length: 0.200000003
+          Length: 0.300000012
           Line Style: Lines
-          Line Width: 0.03
+          Line Width: 0.0299999993
           Name: Local Plan
           Offset:
             X: 0
@@ -249,9 +279,9 @@ Visualization Manager:
             Z: 0
           Pose Color: 255; 85; 255
           Pose Style: None
-          Radius: 0.03
-          Shaft Diameter: 0.1
-          Shaft Length: 0.1
+          Radius: 0.0299999993
+          Shaft Diameter: 0.100000001
+          Shaft Length: 0.100000001
           Topic: /move_base/DWAPlannerROS/local_plan
           Unreliable: false
           Value: true
@@ -293,9 +323,9 @@ Visualization Manager:
       Planning Scene Topic: move_group/monitored_planning_scene
       Robot Description: robot_description
       Scene Geometry:
-        Scene Alpha: 0.9
+        Scene Alpha: 0.899999976
         Scene Color: 50; 230; 50
-        Scene Display Time: 0.2
+        Scene Display Time: 0.200000003
         Show Scene Geometry: true
         Voxel Coloring: Z-Axis
         Voxel Rendering: Occupied Voxels
@@ -321,106 +351,6 @@ Visualization Manager:
             Show Axes: false
             Show Trail: false
             Value: true
-          kinect2_ir_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          kinect2_ir_optical_frame:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          kinect2_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          kinect2_rgb_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          kinect2_rgb_optical_frame:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          left_arm_half_1_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          left_arm_half_2_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          left_base_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          left_ee_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          left_forearm_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          left_gripper_base_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          left_gripper_finger1_finger_tip_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          left_gripper_finger1_knuckle_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          left_gripper_finger2_finger_tip_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          left_gripper_finger2_knuckle_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          left_gripper_finger3_finger_tip_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          left_gripper_finger3_knuckle_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          left_shoulder_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          left_wrist_3_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          left_wrist_spherical_1_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          left_wrist_spherical_2_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
           linear_actuator_fixed_link:
             Alpha: 1
             Show Axes: false
@@ -441,6 +371,27 @@ Visualization Manager:
             Show Axes: false
             Show Trail: false
             Value: true
+          movo_camera_color_frame:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+          movo_camera_color_optical_frame:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+          movo_camera_ir_frame:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+          movo_camera_ir_optical_frame:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+          movo_camera_link:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
           pan_base_link:
             Alpha: 1
             Show Axes: false
@@ -452,85 +403,6 @@ Visualization Manager:
             Show Trail: false
             Value: true
           rear_laser_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          right_arm_half_1_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          right_arm_half_2_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          right_base_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          right_ee_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          right_forearm_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          right_gripper_base_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          right_gripper_finger1_finger_tip_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          right_gripper_finger1_knuckle_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          right_gripper_finger2_finger_tip_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          right_gripper_finger2_knuckle_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          right_gripper_finger3_finger_tip_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          right_gripper_finger3_knuckle_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          right_shoulder_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          right_wrist_3_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          right_wrist_spherical_1_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          right_wrist_spherical_2_link:
             Alpha: 1
             Show Axes: false
             Show Trail: false
@@ -553,9 +425,30 @@ Visualization Manager:
         Show Robot Collision: false
         Show Robot Visual: true
       Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /movo_pcl_processor/observation_markers
+      Name: VolumetricObservation
+      Namespaces:
+        volumetric_observation: true
+      Queue Size: 100
+      Value: true
+    - Class: rviz/Image
+      Enabled: true
+      Image Topic: /aruco_marker_publisher/result
+      Max Value: 1
+      Median window: 5
+      Min Value: 0
+      Name: Image
+      Normalize Range: true
+      Queue Size: 2
+      Transport Hint: compressed
+      Unreliable: false
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 125; 125; 125
+    Default Light: true
     Fixed Frame: odom
     Frame Rate: 30
   Name: root
@@ -575,22 +468,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 0.552908
+      Distance: 5.16699743
       Enable Stereo Rendering:
-        Stereo Eye Separation: 0.06
+        Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 0.976263
-        Y: 0.180384
-        Z: 2.3623
+        X: 1.17400205
+        Y: -0.327719063
+        Z: 0.595721245
+      Focal Shape Fixed Size: true
+      Focal Shape Size: 0.0500000007
+      Invert Z Axis: false
       Name: Current View
-      Near Clip Distance: 0.01
-      Pitch: 0.969797
+      Near Clip Distance: 0.00999999978
+      Pitch: 0.109797224
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 0.143634
+      Yaw: 3.48682833
     Saved: ~
 Window Geometry:
   Displays:
@@ -600,7 +496,7 @@ Window Geometry:
   Hide Right Dock: false
   Image:
     collapsed: false
-  QMainWindow State: 000000ff00000000fd00000004000000000000016a000003befc0200000007fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000006400fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c0061007900730100000028000003be000000dd00fffffffb0000000c00430061006d0065007200610000000334000000ce0000000000000000fb0000000a0049006d00610067006502000005af000002a3000001d100000185000000010000010f000002ddfc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a005600690065007700730000000043000002dd000000b000fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000004a00000003efc0100000002fb0000000800540069006d00650000000000000004a0000002f600fffffffb0000000800540069006d00650100000000000004500000000000000000000005cf000003be00000004000000040000000800000008fc00000002000000020000000000000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd00000004000000000000016a000003befc0200000008fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000006100fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073010000002800000243000000d700fffffffb0000000c00430061006d0065007200610000000334000000ce0000000000000000fb0000000a0049006d00610067006502000005af000002a3000001d100000185fb0000000a0049006d0061006700650100000271000001750000001600ffffff000000010000010f000002ddfc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a005600690065007700730000000043000002dd000000ad00fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000004a00000003efc0100000002fb0000000800540069006d00650000000000000004a00000030000fffffffb0000000800540069006d00650100000000000004500000000000000000000005cf000003be00000004000000040000000800000008fc00000002000000020000000000000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Selection:
     collapsed: false
   Time:
@@ -611,4 +507,4 @@ Window Geometry:
     collapsed: false
   Width: 1855
   X: 55
-  Y: 14
+  Y: 24
