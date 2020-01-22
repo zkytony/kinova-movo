@@ -8,19 +8,19 @@
     <arg name="y"   default="0.0"/>
     <arg name="z"   default="0.0"/>
 
-	<!-- send robot urdf to param server -->
-	<include file="$(find movo_description)/launch/movo_upload.launch"/>
+    <!-- send robot urdf to param server -->
+    <include file="$(find movo_description)/launch/movo_upload.launch"/>
     <rosparam if="$(optenv MOVO_HAS_KINOVA_ARM_6DOF false)" file="$(find movo_gazebo)/controller/gazebo_ros_control_gains.yaml" command="load"/>
     <rosparam if="$(optenv MOVO_HAS_KINOVA_ARM_7DOF false)" file="$(find movo_gazebo)/controller/gazebo_ros_control_gains_7dof.yaml" command="load"/>
     
     <!-- <include if="$(optenv MOVO_HAS_KINOVA_ARM_6DOF false)" file="$(find movo_moveit_config)/launch/movo_moveit_planning_execution.launch"/>
     <include if="$(optenv MOVO_HAS_KINOVA_ARM_7DOF false)" file="$(find movo_7dof_moveit_config)/launch/movo_moveit_planning_execution.launch"/> -->
 
-	<!-- Robot state publisher -->
-	<node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher">
-		<param name="publish_frequency" type="double" value="100.0" />
-		<param name="tf_prefix" type="string" value="" />
-	</node>
+    <!-- Robot state publisher -->
+    <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher">
+      <param name="publish_frequency" type="double" value="100.0" />
+      <param name="tf_prefix" type="string" value="" />
+    </node>
 
     <!-- startup simulated world -->
     <include file="$(find gazebo_ros)/launch/empty_world.launch">
