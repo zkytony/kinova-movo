@@ -62,7 +62,7 @@ class PCLProcessor:
         if self._mark_ar_tag:
             self._sub_artag = message_filters.Subscriber(artag_topic, ArMarkerArray)
             self._pcl_artag_ats = message_filters.ApproximateTimeSynchronizer([self._sub_pcl, self._sub_artag],
-                                                                              20, 5)#queue_size=10, slop=1.0)
+                                                                              20, 3)#queue_size=10, slop=1.0)
             self._pcl_artag_ats.registerCallback(self._pcl_artag_cb)            
         else:
             self._sub_pcl.registerCallback(self._pcl_cb)        
@@ -91,7 +91,6 @@ class PCLProcessor:
 
     def _pcl_artag_cb(self, pcl_msg, artag_msg):
         """Called when received an artag message and a point cloud."""
-        import pdb; pdb.set_trace()
         if self._processing_point_cloud:
             return
         else:
