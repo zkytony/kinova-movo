@@ -55,3 +55,7 @@ CATKIN_IGNORE
 
 # pycharm files
 .idea/
+
+
+#### OTHER PACKAGES (they have their own repo)
+sara_mapping/
