@@ -21,6 +21,7 @@ import tf
 import subprocess
 import os
 import yaml
+import math
 from action.waypoint import WaypointApply
 from action.head_and_torso import TorsoJTAS
 from action.action_type import ActionType
@@ -257,6 +258,12 @@ def main():
     observation_file = get_param('observation_file')
     prior_file = get_param('prior_file')
 
+    # clear exisiting action/observation files
+    if os.path.exists(action_file):
+        os.remove(action_file)
+    if os.path.exists(observation_file):        
+        os.remove(observation_file)  
+
     # other config
     observation_wait_time = get_param('observation_wait_time')
     action_wait_time = get_param('action_wait_time')    
@@ -309,7 +316,7 @@ def main():
             if os.path.exists(action_file):
                 rospy.loginfo("Got action! Executing action...")
                 with open(action_file) as f:
-                    action_info = load_action_from_file(action_file)
+                    action_info = yaml.load(f)
 
                 # observation obtained from robot                    
                 obs_info = execute_action(action_info,  

@@ -1,6 +1,12 @@
 import rospy
 import actionlib
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
+from moveit_msgs.msg import MoveItErrorCodes
+moveit_error_dict = {}
+for name in MoveItErrorCodes.__dict__.keys():
+    if not name[:1] == '_':
+        code = MoveItErrorCodes.__dict__[name]
+        moveit_error_dict[code] = name
 
 
 class WaypointApply(object):
@@ -14,8 +20,7 @@ class WaypointApply(object):
         
     def __init__(self, position, orientation, action_name="navigate"):
         # Get an action client
-        srv_name = rospy.get_param("~move_base_service_name")  # 'movo_move_base'
-        self.client = actionlib.SimpleActionClient(srv_name, MoveBaseAction)
+        self.client = actionlib.SimpleActionClient('movo_move_base', MoveBaseAction)
         self.client.wait_for_server()
 
         self.status = WaypointApply.Status.NOT_RUNNING
@@ -37,7 +42,7 @@ class WaypointApply(object):
     def waypoint_execute(self):
         self.status = WaypointApply.Status.RUNNING
         self.client.send_goal(self.goal, self.done_cb, self.active_cb, self.feedback_cb) 
-        self.client.wait_for_result()
+        status = self.client.wait_for_result()
         result = self.client.get_result()
         if str(moveit_error_dict[result.error_code]) != "SUCCESS":
             self.status = WaypointApply.Status.FAIL
@@ -47,12 +52,12 @@ class WaypointApply(object):
         self.status = WaypointApply.Status.SUCCESS
 
     def active_cb(self):
-        rospy.loginfo("Navigation action "+str(self.action_name+1)+" is now being processed by the Action Server...")
+        rospy.loginfo("Navigation action "+str(self.action_name)+" is now being processed by the Action Server...")
 
     def feedback_cb(self, feedback):
         #To print current pose at each feedback:
         #rospy.loginfo("Feedback for goal "+str(self.action_name)+": "+str(feedback))
-        rospy.loginfo("Feedback for goal pose "+str(self.action_name+1)+" received")
+        rospy.loginfo("Feedback for goal pose "+str(self.action_name)+" received")
 
     def done_cb(self, status, result):
         # Reference for terminal status values: http://docs.ros.org/diamondback/api/actionlib_msgs/html/msg/GoalStatus.html

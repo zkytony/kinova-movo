@@ -24,6 +24,9 @@ target_object_ids:
 torso_min: 0.1
 torso_max: 0.6
 
+# navigation
+goal_tolerance: 0.15
+
 # POMDP viewing frustum parameters
 fov: 60
 aspect_ratio: 1.0
