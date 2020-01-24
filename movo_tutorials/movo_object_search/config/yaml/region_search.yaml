@@ -1,0 +1,22 @@
+# These should be set dynamically in the region search launch file
+torso_min: 0.1
+torso_max: 0.6
+
+# POMDP viewing frustum parameters
+fov: 60
+aspect_ratio: 1.0
+near: 0.1
+far: 7.0
+
+# real observation model parameters
+sparsity: 500
+occupied_threshold: 3
+mark_nearby: true
+
+# communication wait time
+action_wait_time: 30
+observation_wait_time: 30
+
+
+
+
