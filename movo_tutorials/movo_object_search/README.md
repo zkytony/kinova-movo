@@ -24,6 +24,15 @@
     located under `$(find movo_demos)/map/`. It's very confusing that the world
     models and the map files are not in the same package. But, it is what it is.
     
+**Notes**:
+
+* The amcl poses are published under `/amcl_pose`, not /robot_pose.
+* The map is served at `/map` topic, as usual.
+* In the topological map package, even though there is a camera pose topic argument,
+  the code actually does not make use of the camera pose. Therefore I commented
+  it out in the launch file for topological map generation.
+
+    
 ### How to get volumetric observation?
 
 1. Go to `$(movo_object_search)/scripts/observation` and run `python process_pcl.py`.

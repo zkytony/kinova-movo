@@ -1,3 +1,4 @@
+<?xml version="1.0"?>
 <!-- Launches the necessary components for navigation -->
 <launch>
   <arg name="map_file" default="test_simple"/>

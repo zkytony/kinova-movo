@@ -13,16 +13,17 @@ import sensor_msgs.point_cloud2
 from visualization_msgs.msg import Marker, MarkerArray
 from aruco_msgs.msg import MarkerArray as ArMarkerArray
 from std_msgs.msg import Header
-from sensor_msgs.msg import PointCloud2, JointState
+from sensor_msgs.msg import PointCloud2
+from control_msgs.msg import JointTrajectoryControllerState
 from geometry_msgs.msg import Pose, PoseStamped, PoseWithCovarianceStamped
 import message_filters
 import tf
 import subprocess
 import os
 import yaml
-from action_type import ActionType
-from waypoint_apply import WaypointApply
-from head_and_torso import TorsoJTAS
+from action.waypoint import WaypointApply
+from action.head_and_torso import TorsoJTAS
+from action.action_type import ActionType
 from scipy.spatial.transform import Rotation as scipyR
 
 # Start a separate process to run POMDP; Use the virtualenv
@@ -195,7 +196,7 @@ def start_pcl_process(save_path, detect_ar=False):
     mark_nearby = rospy.get_param("~mark_nearby")
     assert type(mark_nearby) == bool
     marker_topic = rospy.get_param("~marker_topic") #"/movo_pcl_processor/observation_markers"
-    point_cloud_topic = rospy.get_param("~point_cloud_topic") #"/movo_pcl_processor/observation_markers"    
+    point_cloud_topic = rospy.get_param("~point_cloud_topic")
     
     optional_args = []
     if detect_ar:
@@ -226,12 +227,14 @@ def wait_for_robot_pose():
 
 def wait_for_torso_height():
     torso_topic = rospy.get_param('~torso_height_topic')  # /movo/linear_actuator/joint_states
-    msg = rospy.wait_for_message(torso_topic, JointState, timeout=15)
-    assert msg.name[0] == 'linear_joint', "Joint is not linear joint (not torso)."
-    return msg.position[0]
+    msg = rospy.wait_for_message(torso_topic, JointTrajectoryControllerState, timeout=15)
+    assert msg.joint_names[0] == 'linear_joint', "Joint is not linear joint (not torso)."
+    position = msg.actual.positions[0]
+    return position
 
 def main():
-    rospy.init_node("movo_object_search_in_region")
+    rospy.init_node("movo_object_search_in_region",
+                    anonymous=True)
 
     region_origin_x = rospy.get_param('~region_origin_x')
     region_origin_y = rospy.get_param('~region_origin_y')
