@@ -16,9 +16,9 @@ import time
 from camera_model import FrustumCamera
 
 # THE VOXEL TYPE; If > 0, it's an object id.
-VOXEL_OCCUPIED = -1
-VOXEL_FREE = -2
-VOXEL_UNKNOWN = -3
+VOXEL_OCCUPIED = "occupied"
+VOXEL_FREE = "free"
+VOXEL_UNKNOWN = "unknown"
 
 # A very good ROS Ask question about the point cloud message
 # https://answers.ros.org/question/273182/trying-to-understand-pointcloud2-msg/
@@ -40,7 +40,8 @@ class PCLProcessor:
                  pcl_topic="/movo_camera/point_cloud/points",
                  marker_topic="/movo_pcl_processor/observation_markers",
                  artag_topic="/aruco_marker_publisher/markers",
-                 voxel_pose_frame="movo_camera_color_optical_frame",
+                 voxel_marker_frame="movo_camera_color_optical_frame",
+                 world_frame="map",
                  sparsity=1000,
                  occupied_threshold=5,
                  mark_nearby=False,  # mark voxels within 1 distance of the artag voxel as well.
@@ -50,7 +51,8 @@ class PCLProcessor:
         self._resolution = resolution
         self._sparsity = sparsity  # number of points to skip
         self._occupied_threshold = occupied_threshold
-        self._voxel_pose_frame = voxel_pose_frame
+        self._voxel_marker_frame = voxel_marker_frame
+        self._world_frame = world_frame
         self._mark_nearby = mark_nearby
         self._mark_ar_tag = mark_ar_tag
         self._cam = FrustumCamera(fov=fov, aspect_ratio=aspect_ratio,
@@ -90,8 +92,9 @@ class PCLProcessor:
             voxels = self.process_cloud(msg)
             # saving
             if self._save_path is not None:
+                wf_voxels = self._transform_worldframe(voxels)
                 with open(self._save_path, "w") as f:
-                    yaml.dump(voxels, f)
+                    yaml.dump(wf_voxels, f)
                     if self._quit_when_saved:
                         self._quit = True
             # publish message
@@ -112,8 +115,8 @@ class PCLProcessor:
 
             # Mark voxel at artag location as object
             for artag in artag_msg.markers:
-                # Transform pose to voxel_pose_frame
-                artag_pose = self._get_transform(self._voxel_pose_frame, artag.header.frame_id, artag.pose.pose)
+                # Transform pose to voxel_marker_frame
+                artag_pose = self._get_transform(self._voxel_marker_frame, artag.header.frame_id, artag.pose.pose)
                 if artag_pose is False:
                     return # no transformed pose obtainable
                 atx = artag_pose.position.x
@@ -136,8 +139,9 @@ class PCLProcessor:
 
             # saving
             if self._save_path is not None:
+                wf_voxels = self._transform_worldframe(voxels)
                 with open(self._save_path, "w") as f:
-                    yaml.dump(voxels, f)
+                    yaml.dump(wf_voxels, f)
                     if self._quit_when_saved:
                         self._quit = True
                         
@@ -180,6 +184,21 @@ class PCLProcessor:
         else:
             rospy.logwarn("Frame %s or %s does not exist. (Check forward slash?)" % (target_frame, source_frame))
             return False
+
+    def _transform_worldframe(self, voxels):
+        # obtain transform
+        (trans,rot) = self._tf_listener.lookupTransform(self._world_frame,
+                                                        self._voxel_marker_frame,
+                                                        rospy.Time(0))
+        wf_voxels = {}
+        for voxel_pose in voxels:
+            x,y,z = voxel_pose
+            wf_pose = (x + trans[0],
+                       y + trans[1],
+                       z + trans[2])
+            wf_voxels[wf_pose] = (wf_pose, voxels[voxel_pose][1])
+        return wf_voxels
+            
 
     def process_cloud(self, msg):
         # Iterate over the voxels in the FOV
@@ -239,7 +258,7 @@ class PCLProcessor:
             
             h = Header()
             h.stamp = timestamp
-            h.frame_id = self._voxel_pose_frame
+            h.frame_id = self._voxel_marker_frame
             
             marker_msg = Marker()
             marker_msg.header = h
@@ -330,8 +349,9 @@ def main():
                         mark_nearby=args.mark_nearby,
                         mark_ar_tag=args.mark_ar_tag,
                         save_path=args.save_path,
-                        quit_when_saved=args.quit_when_saved)  
-    rospy.spin()
+                        quit_when_saved=args.quit_when_saved)
+    while not proc._quit:
+        rospy.spin()
 
 if __name__ == "__main__":
     main()
