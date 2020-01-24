@@ -10,6 +10,7 @@ from geometry_msgs.msg import Pose, PoseStamped
 import message_filters
 import tf
 import util
+import yaml
 
 import time
 from camera_model import FrustumCamera
@@ -43,7 +44,9 @@ class PCLProcessor:
                  sparsity=1000,
                  occupied_threshold=5,
                  mark_nearby=False,  # mark voxels within 1 distance of the artag voxel as well.
-                 mark_ar_tag=True):  # true if use message filter to process ar tag and point cloud messages together
+                 mark_ar_tag=True,   # true if use message filter to process ar tag and point cloud messages together
+                 save_path=None,     # (str) if save the volumetric observation to a file.
+                 quit_when_saved=False):    # terminate when an observation has been saved.
         self._resolution = resolution
         self._sparsity = sparsity  # number of points to skip
         self._occupied_threshold = occupied_threshold
@@ -52,6 +55,10 @@ class PCLProcessor:
         self._mark_ar_tag = mark_ar_tag
         self._cam = FrustumCamera(fov=fov, aspect_ratio=aspect_ratio,
                                   near=near, far=far)
+        self._save_path = save_path
+        self._quit_when_saved = quit_when_saved
+        self._quit = False
+        
         # Listen to tf
         self._tf_listener = tf.TransformListener()
         
@@ -81,11 +88,17 @@ class PCLProcessor:
         else:
             self._processing_point_cloud = True
             voxels = self.process_cloud(msg)
-            msg = self.make_markers_msg(voxels)
+            # saving
+            if self._save_path is not None:
+                with open(self._save_path, "w") as f:
+                    yaml.dump(voxels, f)
+                    if self._quit_when_saved:
+                        self._quit = True
             # publish message
+            msg = self.make_markers_msg(voxels)
             r = rospy.Rate(3) # 3 Hz
             self._pub_pcl.publish(msg)
-            print("Published markers")
+            print("Published markers")            
             self._processing_point_cloud = False
             r.sleep()
 
@@ -120,9 +133,15 @@ class PCLProcessor:
                                           if util.euclidean_dist(voxel_pose, arvoxel_pose) <= 1}
                     for voxel_pose in nearby_voxel_poses:
                         voxels[voxel_pose] = (voxel_pose, artag.id)
-                
+
+            # saving
+            if self._save_path is not None:
+                with open(self._save_path, "w") as f:
+                    yaml.dump(voxels, f)
+                    if self._quit_when_saved:
+                        self._quit = True
+                        
             msg = self.make_markers_msg(voxels)
-            
             # publish message
             r = rospy.Rate(3) # 3 Hz
             self._pub_pcl.publish(msg)
@@ -264,13 +283,35 @@ class PCLProcessor:
 
 def main():
     parser = argparse.ArgumentParser(description='Process Point Cloud as Volumetric Observation')
+    parser.add_argument('-f', '--save-path', type=str)
+    parser.add_argument('--quit-when-saved', action="store_true")    
     parser.add_argument('-p', '--point-cloud-topic', type=str,
                         default="/movo_camera/sd/points")
     parser.add_argument('-m', '--marker-topic', type=str,
                         default="/movo_pcl_processor/observation_markers")
-    parser.add_argument('-M', '--mark-ar-tag', action="store_true")    
+    parser.add_argument('-M', '--mark-ar-tag', action="store_true")
+    parser.add_argument('-N', '--mark-nearby', action="store_true")
+    parser.add_argument('-r', '--resolution', type=float,
+                        help='resolution of search region (i.e. volume). Format, float')
+    parser.add_argument('--fov', type=float,
+                        help="FOV angle",
+                        default=60)
+    parser.add_argument('--asp', type=float,
+                        help="aspect ratio",
+                        default=1.0)
+    parser.add_argument('--near', type=float,
+                        help="near plane",
+                        default=0.1)
+    parser.add_argument('--far', type=float,
+                        help="far plane",
+                        default=7)  # this covers a range from about 0.32m - 4m
+    parser.add_argument('--sparsity', type=float,
+                        help="Sparsity of point cloud sampling",
+                        default=500)
+    parser.add_argument('--occupied-threshold', type=float,
+                        help="Number of points needed in a cube to mark it as occupied",
+                        default=3)
     args = parser.parse_args()
-    
     rospy.init_node("movo_pcl_processor",
                     anonymous=True, disable_signals=True)
 
@@ -281,12 +322,15 @@ def main():
     # 62 x 48.6 degrees resulting in an average of about 10 x 10 pixels per degree. (see source 1)
     # The new Kinect has color image resolution of 1920 x 1080 pixels and a fov
     # of 84.1 x 53.8 resulting in an average of about 22 x 20 pixels per degree. (see source 2)
-    proc = PCLProcessor(fov=60, aspect_ratio=1.0,
-                        near=1.0, far=7, resolution=0.3,
-                        sparsity=500, occupied_threshold=3,
+    proc = PCLProcessor(fov=args.fov, aspect_ratio=args.asp,
+                        near=args.near, far=args.far, resolution=args.resolution,
+                        sparsity=args.sparsity, occupied_threshold=args.occupied_threshold,
                         pcl_topic=args.point_cloud_topic,
                         marker_topic=args.marker_topic,
-                        mark_ar_tag=args.mark_ar_tag)  # this covers a range from about 0.32m - 4m
+                        mark_nearby=args.mark_nearby,
+                        mark_ar_tag=args.mark_ar_tag,
+                        save_path=args.save_path,
+                        quit_when_saved=args.quit_when_saved)  
     rospy.spin()
 
 if __name__ == "__main__":
