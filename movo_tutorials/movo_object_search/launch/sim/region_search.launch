@@ -10,7 +10,7 @@
   <arg name="prior_file" default="$(find movo_object_search)/tmp/prior.yaml"/>
 
   <!-- Region search -->  
-  <node pkg="movo_object_search" type="search_in_region.py" name="region_object_search">
+  <node pkg="movo_object_search" type="search_in_region.py" name="region_object_search" launch-prefix="xterm -e python -m pdb">
     <rosparam command="load" file="$(find movo_object_search)/config/yaml/region_search.yaml"/>
     <!-- <param name="region_origin_x"          value="$(arg region_origin_x)"/> -->
     <!-- <param name="region_origin_y"          value="$(arg region_origin_y"/>        -->

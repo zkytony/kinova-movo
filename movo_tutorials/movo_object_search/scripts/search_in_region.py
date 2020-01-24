@@ -26,14 +26,22 @@ from action.head_and_torso import TorsoJTAS
 from action.action_type import ActionType
 from scipy.spatial.transform import Rotation as scipyR
 
+FROM_LAUNCH = False
+
 # Start a separate process to run POMDP; Use the virtualenv
 VENV_PYTHON = "/home/kaiyuzh/pyenv/py37/bin/python"
 POMDP_SCRIPT = "/home/kaiyuzh/repo/3d-moos-pomdp/moos3d/robot_demo/build_pomdp.py"
 
+def get_param(param):
+    if FROM_LAUNCH:
+        return rospy.get_param("~" + param)
+    else:
+        return rospy.get_param(param)
+
 def euclidean_dist(p1, p2):
     return math.sqrt(sum([(a - b)** 2 for a, b in zip(p1, p2)]))
 
-def read_pose_msg(self, msg):
+def read_pose_msg(msg):
     x = msg.pose.pose.position.x
     y = msg.pose.pose.position.y
     z = msg.pose.pose.position.z
@@ -44,11 +52,8 @@ def read_pose_msg(self, msg):
     return (x,y,z,qx,qy,qz,qw)
 
 
-def str_arg(self, arg):
-    return "\"" + arg + "\""
-
-def list_arg(self, l):
-    return "\"" + " ".join(l) + "\""
+def list_arg(l):
+    return " ".join(map(str,l))
 
 def execute_action(action_info,
                    robot_state,
@@ -60,7 +65,7 @@ def execute_action(action_info,
     if action_info["type"] == ActionType.TopoMotionAction:
         # check source
         cur_robot_pose = wait_for_robot_pose()
-        goal_tolerance = rospy.get_param('~goal_tolerance')
+        goal_tolerance = get_param('goal_tolerance')
         if euclidean_dist(cur_robot_pose[:3], action_info["src_pose"]) > goal_tolerance:
             rospy.logerror("Robot is at %s, far away from expected location %s"\
                            (str(cur_robot_pose[:3]), action_info["src_pose"]))
@@ -128,7 +133,7 @@ def execute_action(action_info,
             # to a file.
             rospy.loginfo("Projecting field of view; Processing point cloud.")
             start_time = rospy.Time.now()
-            voxels_dir = os.path.dirname(rospy.get_param('~observation_file'))
+            voxels_dir = os.path.dirname(get_param('observation_file'))
             vpath_ar = os.path.join(voxels_dir, "voxels_ar.yaml")
             vpath = os.path.join(voxels_dir, "voxels.yaml")
             start_pcl_process(save_path=vpath_ar,
@@ -136,7 +141,7 @@ def execute_action(action_info,
             start_pcl_process(save_path=vpath,
                               detect_ar=False)
             # wait until files are present
-            wait_time = max(1, rospy.get_param('~observation_wait_time') - 3)
+            wait_time = max(1, get_param('observation_wait_time') - 3)
             observation_saved = False
             while rospy.Time.now() - start_time < rospy.Duration(wait_time):
                 if os.path.exists(vpath):
@@ -167,7 +172,7 @@ def execute_action(action_info,
         # Based on last observation, mark objects as detected
         last_action, last_observation = last_action_observation
         if last_action is not None and last_observation is not None:
-            target_object_ids = set(rospy.get_param('~target_object_ids'))
+            target_object_ids = set(get_param('target_object_ids'))
             new_objects_found = set({})            
             if last_action["type"] == ActionType.LookAction:
                 voxels = last_observation["voxels"]
@@ -186,17 +191,17 @@ def execute_action(action_info,
         
         
 def start_pcl_process(save_path, detect_ar=False):
-    search_space_dimension = rospy.get_param('~search_space_dimension')
-    fov = rospy.get_param('~fov')
-    asp = rospy.get_param('~aspect_ratio')
-    near = rospy.get_param('~near')
-    far = rospy.get_param('~far')
-    sparsity = rospy.get_param("~sparsity")
-    occupied_threshold = rospy.get_param("~occupied_threshold")
-    mark_nearby = rospy.get_param("~mark_nearby")
+    search_space_dimension = get_param('search_space_dimension')
+    fov = get_param('fov')
+    asp = get_param('aspect_ratio')
+    near = get_param('near')
+    far = get_param('far')
+    sparsity = get_param("sparsity")
+    occupied_threshold = get_param("occupied_threshold")
+    mark_nearby = get_param("mark_nearby")
     assert type(mark_nearby) == bool
-    marker_topic = rospy.get_param("~marker_topic") #"/movo_pcl_processor/observation_markers"
-    point_cloud_topic = rospy.get_param("~point_cloud_topic")
+    marker_topic = get_param("marker_topic") #"/movo_pcl_processor/observation_markers"
+    point_cloud_topic = get_param("point_cloud_topic")
     
     optional_args = []
     if detect_ar:
@@ -206,27 +211,27 @@ def start_pcl_process(save_path, detect_ar=False):
             optional_args.append("-N")
     
     subprocess.Popen(["rosrun", "movo_object_search", "process_pcl.py",
-                      "--save-path", str_arg(save_path),
+                      "--save-path", str(save_path),
                       "--quit-when-saved",
-                      "--point-cloud-topic", str_arg(point_cloud_topic),
-                      "--marker-topic", str_arg(marker_topic),
+                      "--point-cloud-topic", str(point_cloud_topic),
+                      "--marker-topic", str(marker_topic),
                       "--resolution", str(search_space_resolution),
-                      "--fov", camera_config['fov'],
-                      "--asp", camera_config['asp'],
-                      "--near", camera_config['near'],
-                      "--far", camera_config['far'],
+                      "--fov", str(camera_config['fov']),
+                      "--asp", str(camera_config['asp']),
+                      "--near", str(camera_config['near']),
+                      "--far", str(camera_config['far']),
                       "--sparsity", str(sparsity),
                       "--occupied-threshold", str(occupied_threshold)]\
                      + optional_args)
 
 def wait_for_robot_pose():
-    robot_pose_topic = rospy.get_param('~robot_pose_topic')
+    robot_pose_topic = get_param('robot_pose_topic')
     msg = rospy.wait_for_message(robot_pose_topic, PoseWithCovarianceStamped, timeout=15)
     robot_pose = read_pose_msg(msg)
     return robot_pose
 
 def wait_for_torso_height():
-    torso_topic = rospy.get_param('~torso_height_topic')  # /movo/linear_actuator/joint_states
+    torso_topic = get_param('torso_height_topic')  # /movo/linear_actuator/joint_states
     msg = rospy.wait_for_message(torso_topic, JointTrajectoryControllerState, timeout=15)
     assert msg.joint_names[0] == 'linear_joint', "Joint is not linear joint (not torso)."
     position = msg.actual.positions[0]
@@ -236,35 +241,36 @@ def main():
     rospy.init_node("movo_object_search_in_region",
                     anonymous=True)
 
-    region_origin_x = rospy.get_param('~region_origin_x')
-    region_origin_y = rospy.get_param('~region_origin_y')
+    region_origin_x = get_param('region_origin_x')
+    region_origin_y = get_param('region_origin_y')
 
-    search_space_dimension = rospy.get_param('~search_space_dimension')
-    search_space_resolution = rospy.get_param('~search_space_resolution')
-    target_object_ids = rospy.get_param('~target_object_ids')  # a list
-    print("Total search space area: %.3f x %.3f x %.3f m^3"
-          % (search_space_dimension * search_space_resolution))
+    search_space_dimension = get_param('search_space_dimension')
+    search_space_resolution = get_param('search_space_resolution')
+    target_object_ids = get_param('target_object_ids')  # a list
+    _size = search_space_dimension * search_space_resolution
+    rospy.loginfo("Total search space area: %.3f x %.3f x %.3f m^3"
+                  % (_size, _size, _size))
 
     # files
-    topo_map_file = rospy.get_param('~topo_map_file')
-    action_file = rospy.get_param('~action_file')
-    observation_file = rospy.get_param('~observation_file')
-    prior_file = rospy.get_param('~prior_file')
+    topo_map_file = get_param('topo_map_file')
+    action_file = get_param('action_file')
+    observation_file = get_param('observation_file')
+    prior_file = get_param('prior_file')
 
     # other config
-    observation_wait_time = rospy.get_param('~observation_wait_time')
-    action_wait_time = rospy.get_param('~action_wait_time')    
-    fov = rospy.get_param('~fov')
-    asp = rospy.get_param('~aspect_ratio')
-    near = rospy.get_param('~near')
-    far = rospy.get_param('~far')
-    torso_min = rospy.get_param('~torso_min')
-    torso_max = rospy.get_param('~torso_max')
+    observation_wait_time = get_param('observation_wait_time')
+    action_wait_time = get_param('action_wait_time')    
+    fov = get_param('fov')
+    asp = get_param('aspect_ratio')
+    near = get_param('near')
+    far = get_param('far')
+    torso_min = get_param('torso_min')
+    torso_max = get_param('torso_max')
 
     # for volumetric observation
-    sparsity = rospy.get_param("~sparsity")
-    occupied_threshold = rospy.get_param("~occupied_threshold")
-    mark_nearby = rospy.get_param("~mark_nearby")
+    sparsity = get_param("sparsity")
+    occupied_threshold = get_param("occupied_threshold")
+    mark_nearby = get_param("mark_nearby")
     camera_config = {"fov": fov, "asp": asp,
                      "near": near, "far": far}
 
@@ -274,21 +280,21 @@ def main():
     subprocess.Popen([VENV_PYTHON, POMDP_SCRIPT,
                       # arguments
                       topo_map_file,
-                      robot_pose,
-                      search_space_dimension,
+                      list_arg(robot_pose),
+                      str(search_space_dimension),
                       list_arg(target_object_ids),
                       list_arg([region_origin_x, region_origin_y]),
-                      search_space_resolution,
+                      str(search_space_resolution),
                       action_file,
                       observation_file,
-                      "--torso-min", torso_min,
-                      "--torso-max", torso_max,
-                      "--wait-time", observation_wait_time,
+                      "--torso-min", str(torso_min),
+                      "--torso-max", str(torso_max),
+                      "--wait-time", str(observation_wait_time),
                       "--prior-file", prior_file,
-                      "--fov", fov,
-                      "--asp", asp,
-                      "--near", near,
-                      "--far", far])
+                      "--fov", str(fov),
+                      "--asp", str(asp),
+                      "--near", str(near),
+                      "--far", str(far)])
     
     # Wait for an action and execute this action
     robot_state = {"objects_found": set({})}
