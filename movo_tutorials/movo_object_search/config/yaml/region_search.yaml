@@ -5,7 +5,7 @@ search_space_dimension: 16
 search_space_resolution: 0.3
 
 topo_map_file: "/home/kaiyuzh/movo_ws/src/movo_tutorials/movo_object_search/maps/test_simple_topo.json"
-region_file: "/home/kaiyuzh/movo_ws/src/movo_tutorials/movo_object_search/maps/test_simple_regions.yaml"
+region_file: "/home/kaiyuzh/movo_ws/src/movo_tutorials/movo_object_search/maps/test_simple_regions.json"
 region_name: "table_area"
 
 observation_file: "/home/kaiyuzh/movo_ws/src/movo_tutorials/movo_object_search/tmp/obs_info.yaml"

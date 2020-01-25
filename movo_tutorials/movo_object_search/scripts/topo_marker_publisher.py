@@ -25,6 +25,7 @@ class PublishSearchRegionMarkers:
                  marker_topic="/movo_object_search_in_region/region_markers"):
         self._marker_frame = marker_frame
         self._region_size = search_region_dimension * search_region_resolution
+        self._region_origin = region_origin
         
         markers_msg = self.make_markers_msg()
         self._pub = rospy.Publisher(marker_topic,
@@ -39,8 +40,8 @@ class PublishSearchRegionMarkers:
         i = 0
         markers = []
         
-        region_center = (region_origin[0] + self._region_size / 2.0,
-                         region_origin[1] + self._region_size / 2.0)
+        region_center = (self._region_origin[0] + self._region_size / 2.0,
+                         self._region_origin[1] + self._region_size / 2.0)
         
         # rectangle
         h = Header()
@@ -57,9 +58,9 @@ class PublishSearchRegionMarkers:
         marker_msg.scale.x = self._region_size
         marker_msg.scale.y = self._region_size
         marker_msg.scale.z = 0.02
-        marker_msg.color.r = 0.1
-        marker_msg.color.g = 0.1
-        marker_msg.color.b = 0.6
+        marker_msg.color.r = 0.2
+        marker_msg.color.g = 0.7
+        marker_msg.color.b = 0.7
         marker_msg.color.a = 0.4            
         marker_msg.lifetime = rospy.Duration(0)  # forever
         marker_msg.frame_locked = True

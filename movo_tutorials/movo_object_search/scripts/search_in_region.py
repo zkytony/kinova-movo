@@ -251,9 +251,10 @@ def main():
     region_name = get_param("region_name")
     with open(region_file) as f:
         data = json.load(f)
-    region_origin_x, region_origin_y = tuple(map(float, data["regions"][region_name]["origin"][:2]))
-    search_space_dimension = int(data["dimension"])
-    search_space_resolution = float(data["resolution"])
+        region_data = data["regions"][region_name]
+    region_origin = tuple(map(float, region_data["origin"][:2]))
+    search_space_dimension = int(region_data["dimension"])
+    search_space_resolution = float(region_data["resolution"])
     
     # region_origin_x = get_param('region_origin_x')
     # region_origin_y = get_param('region_origin_y')
@@ -294,7 +295,7 @@ def main():
     
     # publish topo markers
     PublishTopoMarkers(topo_map_file, search_space_resolution)
-    PublishSearchRegionMarkers(region_origin, search_region_dimension, search_region_resolution)
+    PublishSearchRegionMarkers(region_origin, search_space_dimension, search_space_resolution)
 
     # Listen to robot pose
     robot_pose = wait_for_robot_pose()
@@ -305,7 +306,7 @@ def main():
                       list_arg(robot_pose),
                       str(search_space_dimension),
                       list_arg(target_object_ids),
-                      list_arg([region_origin_x, region_origin_y]),
+                      list_arg(region_origin),
                       str(search_space_resolution),
                       action_file,
                       observation_file,

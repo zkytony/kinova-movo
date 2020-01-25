@@ -13,6 +13,7 @@ Panels:
         - /observation_ar1
         - /observation1
         - /PoseArray1
+        - /Search region1
       Splitter Ratio: 0.59523797
     Tree Height: 699
   - Class: rviz/Selection
@@ -811,7 +812,7 @@ Visualization Manager:
       Marker Topic: /movo_pcl_processor/observation_markers_ar
       Name: observation_ar
       Namespaces:
-        {}
+        volumetric_observation: true
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
@@ -847,6 +848,14 @@ Visualization Manager:
       Topic: /particlecloud
       Unreliable: false
       Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /movo_object_search_in_region/region_markers
+      Name: Search region
+      Namespaces:
+        search_region: true
+      Queue Size: 100
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 125; 125; 125
@@ -870,25 +879,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 7.33159256
+      Distance: 8.55338097
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -0.542932928
-        Y: 1.0737642
-        Z: -0.652316451
+        X: 0.614720881
+        Y: 0.135737121
+        Z: -0.653527915
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.0500000007
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Pitch: 0.754796922
+      Pitch: 1.56979632
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 3.65858459
+      Yaw: 5.12358236
     Saved: ~
 Window Geometry:
   Displays:
