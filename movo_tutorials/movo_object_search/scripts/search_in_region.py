@@ -27,7 +27,7 @@ from action.waypoint import WaypointApply
 from action.head_and_torso import TorsoJTAS
 from action.action_type import ActionType
 from scipy.spatial.transform import Rotation as scipyR
-from topo_marker_publisher import PublishTopoMarkers
+from topo_marker_publisher import PublishTopoMarkers, PublishSearchRegionMarkers
 
 FROM_LAUNCH = False
 
@@ -69,9 +69,10 @@ def execute_action(action_info,
         # check source
         cur_robot_pose = wait_for_robot_pose()
         goal_tolerance = get_param('goal_tolerance')
-        if euclidean_dist(cur_robot_pose[:3], action_info["src_pose"]) > goal_tolerance:
-            rospy.logwarn("Robot is at %s, far away from expected location %s; But won't stop moving."\
-                          % (str(cur_robot_pose[:3]), str(action_info["src_pose"])))
+        _gap = euclidean_dist(cur_robot_pose[:3], action_info["src_pose"])
+        if _gap > goal_tolerance:
+            rospy.logwarn("Robot is at %s, far from topo node location %s (dist=%.3f > %.3f); But won't stop moving."\
+                          % (str(cur_robot_pose[:3]), str(action_info["src_pose"]), _gap, goal_tolerance))
         
         # navigate to destination
         position = action_info["dst_pose"]  # x,y,z
@@ -116,7 +117,7 @@ def execute_action(action_info,
         cur_robot_pose = wait_for_robot_pose()
         # Rotate the robot
         position = cur_robot_pose[:3]
-        orientation = scipyR.from_euler("xyz", rotation, degrees=True).as_quat()
+        orientation = tuple(map(float, scipyR.from_euler("xyz", rotation, degrees=True).as_quat()))
         if WaypointApply(position, orientation).status == WaypointApply.Status.SUCCESS:
             # Successfully moved robot; Return an observation about the robot state.
             rospy.loginfo("Robot rotate successfully")
@@ -159,10 +160,10 @@ def execute_action(action_info,
                 # use ar tag detection observation
                 rospy.loginfo("Using the voxels that may contain AR tag labels.")
                 with open(vpath_ar) as f:
-                    voxels = yaml.safe_load(f)
+                    voxels = yaml.load(f)
             else:
-                with open(vpath_ar) as f:
-                    voxels = yaml.safe_load(f)
+                with open(vpath) as f:
+                    voxels = yaml.load(f)
             obs_info["camera_direction"] = orientation  # consistent with transition model.
             obs_info["voxels"] = voxels # volumetric observation
         else:
@@ -285,6 +286,7 @@ def main():
     
     # publish topo markers
     PublishTopoMarkers(topo_map_file, search_space_resolution)
+    PublishSearchRegionMarkers(region_origin, search_region_dimension, search_region_resolution)
 
     # Listen to robot pose
     robot_pose = wait_for_robot_pose()

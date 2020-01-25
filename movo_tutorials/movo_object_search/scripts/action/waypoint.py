@@ -16,7 +16,8 @@ def euclidean_dist(p1, p2):
 def yaw_diff(quat1, quat2):
     euler1 = scipyR.from_quat(quat1).as_euler("xyz")
     euler2 = scipyR.from_quat(quat2).as_euler("xyz")
-    return euler1[2] - euler2[2]
+    rospy.loginfo(euler1[2] - euler2[2])
+    return abs(euler1[2] - euler2[2])
 
 class WaypointApply(object):
     class Status:
@@ -27,7 +28,7 @@ class WaypointApply(object):
     def __init__(self,
                  position, orientation,
                  action_name="navigate",
-                 xy_tolerance=0.05, rot_tolerance=0.05):
+                 xy_tolerance=0.05, rot_tolerance=0.3):
         # Get an action client
         self.client = actionlib.SimpleActionClient('movo_move_base', MoveBaseAction)
         rospy.loginfo("Waiting for movo_move_base AS...")

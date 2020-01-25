@@ -40,4 +40,4 @@ mark_nearby: true
 
 # communication wait time
 action_wait_time: 60
-observation_wait_time: 60
+observation_wait_time: 120

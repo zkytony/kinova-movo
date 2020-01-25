@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+#
 ### Listens to point cloud and process it
 import argparse
 import rospy
@@ -149,7 +151,7 @@ class PCLProcessor:
             # publish message
             r = rospy.Rate(3) # 3 Hz
             self._pub_pcl.publish(msg)
-            print("Published markers")
+            print("Published markers (with AR)")
             self._processing_point_cloud = False
             r.sleep()
     

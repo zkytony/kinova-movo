@@ -5,7 +5,71 @@ from std_msgs.msg import Header
 from geometry_msgs.msg import Pose, Point
 import json
 
+def make_pose_msg(posit, orien):
+    pose = Pose()
+    pose.position.x = posit[0]
+    pose.position.y = posit[1]
+    pose.position.z = posit[2]
+    pose.orientation.x = orien[0]
+    pose.orientation.y = orien[1]
+    pose.orientation.z = orien[2]
+    pose.orientation.w = orien[3]
+    return pose            
+
+class PublishSearchRegionMarkers:
+    def __init__(self,
+                 region_origin,
+                 search_region_dimension,
+                 search_region_resolution,
+                 marker_frame="map",
+                 marker_topic="/movo_object_search_in_region/region_markers"):
+        self._marker_frame = marker_frame
+        self._region_size = search_region_dimension * search_region_resolution
+        
+        markers_msg = self.make_markers_msg()
+        self._pub = rospy.Publisher(marker_topic,
+                                    MarkerArray,
+                                    queue_size=10,
+                                    latch=True)
+        self._pub.publish(markers_msg)        
+        
+    def make_markers_msg(self):
+        """Convert voxels to Markers message for visualizatoin"""
+        timestamp = rospy.Time.now()
+        i = 0
+        markers = []
+        
+        region_center = (region_origin[0] + self._region_size / 2.0,
+                         region_origin[1] + self._region_size / 2.0)
+        
+        # rectangle
+        h = Header()
+        h.stamp = timestamp
+        h.frame_id = self._marker_frame
+        marker_msg = Marker()
+        marker_msg.header = h
+        marker_msg.type = 1  # cube
+        marker_msg.ns = "search_region"
+        marker_msg.id = i; i+=1
+        marker_msg.action = 0 # add an object
+        marker_msg.pose = make_pose_msg((region_center[0], region_center[1], 0.0),
+                                        [0,0,0,1])
+        marker_msg.scale.x = self._region_size
+        marker_msg.scale.y = self._region_size
+        marker_msg.scale.z = 0.02
+        marker_msg.color.r = 0.1
+        marker_msg.color.g = 0.1
+        marker_msg.color.b = 0.6
+        marker_msg.color.a = 0.4            
+        marker_msg.lifetime = rospy.Duration(0)  # forever
+        marker_msg.frame_locked = True
+        markers.append(marker_msg)
+        marker_array_msg = MarkerArray(markers)
+        return marker_array_msg
+    
+
 class PublishTopoMarkers:
+    """Debug markers include: topological graph; search region."""
     def __init__(self,
                  map_file,
                  resolution,
@@ -34,17 +98,6 @@ class PublishTopoMarkers:
                                     latch=True)
         self._pub.publish(markers_msg)
 
-    def _make_pose_msg(self, posit, orien):
-        pose = Pose()
-        pose.position.x = posit[0]
-        pose.position.y = posit[1]
-        pose.position.z = posit[2]
-        pose.orientation.x = orien[0]
-        pose.orientation.y = orien[1]
-        pose.orientation.z = orien[2]
-        pose.orientation.w = orien[3]
-        return pose            
-            
     def make_markers_msg(self):
         """Convert voxels to Markers message for visualizatoin"""
         timestamp = rospy.Time.now()
@@ -64,7 +117,7 @@ class PublishTopoMarkers:
             marker_msg.ns = "topo_map_node"
             marker_msg.id = i; i+=1
             marker_msg.action = 0 # add an object
-            marker_msg.pose = self._make_pose_msg(xyz, [0,0,0,1])
+            marker_msg.pose = make_pose_msg(xyz, [0,0,0,1])
             marker_msg.scale.x = self._resolution
             marker_msg.scale.y = self._resolution
             marker_msg.scale.z = 0.05
@@ -83,7 +136,7 @@ class PublishTopoMarkers:
             marker_msg.ns = "topo_map_node"
             marker_msg.id = i; i+=1
             marker_msg.action = 0 # add an object
-            marker_msg.pose = self._make_pose_msg(xyz, [0,0,0,1])
+            marker_msg.pose = make_pose_msg(xyz, [0,0,0,1])
             marker_msg.scale.x = self._resolution * 4
             marker_msg.scale.y = self._resolution * 4
             marker_msg.scale.z = 0.05
@@ -121,7 +174,7 @@ class PublishTopoMarkers:
             marker_msg.ns = "topo_map_edge"
             marker_msg.id = i; i+=1
             marker_msg.action = 0 # add an object
-            marker_msg.pose = self._make_pose_msg((0,0,0), [0,0,0,1])
+            marker_msg.pose = make_pose_msg((0,0,0), [0,0,0,1])
             marker_msg.scale.x = 0.01
             marker_msg.points = [point1, point2]
 
