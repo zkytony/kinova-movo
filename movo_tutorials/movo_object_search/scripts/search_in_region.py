@@ -15,17 +15,19 @@ from aruco_msgs.msg import MarkerArray as ArMarkerArray
 from std_msgs.msg import Header
 from sensor_msgs.msg import PointCloud2
 from control_msgs.msg import JointTrajectoryControllerState
-from geometry_msgs.msg import Pose, PoseStamped, PoseWithCovarianceStamped
+from geometry_msgs.msg import Pose, PoseStamped, PoseWithCovarianceStamped, Point
 import message_filters
 import tf
 import subprocess
 import os
 import yaml
 import math
+import json
 from action.waypoint import WaypointApply
 from action.head_and_torso import TorsoJTAS
 from action.action_type import ActionType
 from scipy.spatial.transform import Rotation as scipyR
+from topo_marker_publisher import PublishTopoMarkers
 
 FROM_LAUNCH = False
 
@@ -68,14 +70,14 @@ def execute_action(action_info,
         cur_robot_pose = wait_for_robot_pose()
         goal_tolerance = get_param('goal_tolerance')
         if euclidean_dist(cur_robot_pose[:3], action_info["src_pose"]) > goal_tolerance:
-            rospy.logerror("Robot is at %s, far away from expected location %s"\
-                           (str(cur_robot_pose[:3]), action_info["src_pose"]))
+            rospy.logerr("Robot is at %s, far away from expected location %s"\
+                         (str(cur_robot_pose[:3]), action_info["src_pose"]))
         
         # navigate to destination
         position = action_info["dst_pose"]  # x,y,z
         # default rotation is (0,0,0) --> will look "forward"
         orientation = (0,0,0,1)  # equivalent to (0,0,0) in euler.
-        if WaypointApply(position, orientation).status == WaypointApply.SUCCESS:
+        if WaypointApply(position, orientation).status == WaypointApply.Status.SUCCESS:
             # Successfully moved robot; Return an observation about the robot state.
             rospy.loginfo("Applied motion action successfully")
             obs_info["status"] = "success"
@@ -114,7 +116,7 @@ def execute_action(action_info,
         # Rotate the robot
         position = cur_robot_pose[:3]
         orientation = scipyR.from_euler("xyz", rotation, degrees=True).as_quat()
-        if WaypointApply(position, orientation).status == WaypointApply.SUCCESS:
+        if WaypointApply(position, orientation).status == WaypointApply.Status.SUCCESS:
             # Successfully moved robot; Return an observation about the robot state.
             rospy.loginfo("Robot rotate successfully")
             obs_info["status"] = "success"
@@ -281,69 +283,73 @@ def main():
     camera_config = {"fov": fov, "asp": asp,
                      "near": near, "far": far}
 
+    # publish topo markers
+    PublishTopoMarkers(topo_map_file, search_space_resolution)
+
     # Listen to robot pose
     robot_pose = wait_for_robot_pose()
+    rospy.spin()
 
-    subprocess.Popen([VENV_PYTHON, POMDP_SCRIPT,
-                      # arguments
-                      topo_map_file,
-                      list_arg(robot_pose),
-                      str(search_space_dimension),
-                      list_arg(target_object_ids),
-                      list_arg([region_origin_x, region_origin_y]),
-                      str(search_space_resolution),
-                      action_file,
-                      observation_file,
-                      "--torso-min", str(torso_min),
-                      "--torso-max", str(torso_max),
-                      "--wait-time", str(observation_wait_time),
-                      "--prior-file", prior_file,
-                      "--fov", str(fov),
-                      "--asp", str(asp),
-                      "--near", str(near),
-                      "--far", str(far)])
+    # subprocess.Popen([VENV_PYTHON, POMDP_SCRIPT,
+    #                   # arguments
+    #                   topo_map_file,
+    #                   list_arg(robot_pose),
+    #                   str(search_space_dimension),
+    #                   list_arg(target_object_ids),
+    #                   list_arg([region_origin_x, region_origin_y]),
+    #                   str(search_space_resolution),
+    #                   action_file,
+    #                   observation_file,
+    #                   "--torso-min", str(torso_min),
+    #                   "--torso-max", str(torso_max),
+    #                   "--wait-time", str(observation_wait_time),
+    #                   "--prior-file", prior_file,
+    #                   "--fov", str(fov),
+    #                   "--asp", str(asp),
+    #                   "--near", str(near),
+    #                   "--far", str(far)])
     
-    # Wait for an action and execute this action
-    robot_state = {"objects_found": set({})}
-    last_action_observation = (None, None)
-    step = 0
-    while True:
-        rospy.loginfo("Waiting for action...(t=%d)" % step)
-        start_time = rospy.Time.now()
-        observation = None
-        observation_issued = False
-        while rospy.Time.now() - start_time < rospy.Duration(action_wait_time):
-            if os.path.exists(action_file):
-                rospy.loginfo("Got action! Executing action...")
-                with open(action_file) as f:
-                    action_info = yaml.load(f)
+    # # Wait for an action and execute this action
+    # robot_state = {"objects_found": set({})}
+    # last_action_observation = (None, None)
+    # step = 0
+    # while True:
+    #     rospy.loginfo("Waiting for action...(t=%d)" % step)
+    #     start_time = rospy.Time.now()
+    #     observation = None
+    #     observation_issued = False
+    #     while rospy.Time.now() - start_time < rospy.Duration(action_wait_time):
+    #         if os.path.exists(action_file):
+    #             rospy.loginfo("Got action! Executing action...")
+    #             with open(action_file) as f:
+    #                 action_info = yaml.load(f)
 
-                # observation obtained from robot                    
-                obs_info = execute_action(action_info,  
-                                          robot_state,
-                                          last_action_observation)
-                robot_state["objects_found"] = obs_info["objects_found"]
+    #             # observation obtained from robot                    
+    #             obs_info = execute_action(action_info,  
+    #                                       robot_state,
+    #                                       last_action_observation)
+    #             robot_state["objects_found"] = obs_info["objects_found"]
                 
-                with open(observation_file, "w") as f:
-                    yaml.dump(obs_infp, f)
+    #             with open(observation_file, "w") as f:
+    #                 yaml.dump(obs_infp, f)
                     
-                rospy.loginfo("Action executed. Observation written to file %s" % observation_file)
-                last_action_observation = (action_info, obs_info)
-                observation_issued = True
+    #             rospy.loginfo("Action executed. Observation written to file %s" % observation_file)
+    #             last_action_observation = (action_info, obs_info)
+    #             observation_issued = True
 
-                # remove action file
-                os.remove(action_file)
-                break  # break the loop                
-            else:
-                rospy.loginfo("Waiting for POMDP action...")
-                rospy.sleep(0.5)
-        if not observation_issued:
-            rospy.logerror("Timed out waiting for POMDP action.")
-            break
-        if robot_state["objects_found"] == set(target_object_ids):
-            rospy.loginfo("Done! All objects found in this region")
-            break
-        step += 1
+    #             # remove action file
+    #             os.remove(action_file)
+    #             break  # break the loop                
+    #         else:
+    #             rospy.loginfo("Waiting for POMDP action...")
+    #             rospy.sleep(0.5)
+    #     if not observation_issued:
+    #         rospy.logerror("Timed out waiting for POMDP action.")
+    #         break
+    #     if robot_state["objects_found"] == set(target_object_ids):
+    #         rospy.loginfo("Done! All objects found in this region")
+    #         break
+    #     step += 1
 
 if __name__ == "__main__":
     main()
