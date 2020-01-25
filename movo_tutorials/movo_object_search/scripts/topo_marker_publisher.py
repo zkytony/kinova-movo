@@ -57,6 +57,7 @@ class PublishTopoMarkers:
             h.stamp = timestamp
             h.frame_id = self._marker_frame
 
+            # node cylinder
             marker_msg = Marker()
             marker_msg.header = h
             marker_msg.type = 3  # Cylinder
@@ -67,8 +68,6 @@ class PublishTopoMarkers:
             marker_msg.scale.x = self._resolution
             marker_msg.scale.y = self._resolution
             marker_msg.scale.z = 0.05
-
-            # color
             marker_msg.color.r = 0.8
             marker_msg.color.g = 0.5
             marker_msg.color.b = 0.5
@@ -76,6 +75,26 @@ class PublishTopoMarkers:
             marker_msg.lifetime = rospy.Duration(0)  # forever
             marker_msg.frame_locked = True
             markers.append(marker_msg)
+
+            # node id text
+            marker_msg = Marker()
+            marker_msg.header = h
+            marker_msg.type = 9  # TEXT_VIEW_FACING
+            marker_msg.ns = "topo_map_node"
+            marker_msg.id = i; i+=1
+            marker_msg.action = 0 # add an object
+            marker_msg.pose = self._make_pose_msg(xyz, [0,0,0,1])
+            marker_msg.scale.x = self._resolution * 4
+            marker_msg.scale.y = self._resolution * 4
+            marker_msg.scale.z = 0.05
+            marker_msg.color.r = 0.9
+            marker_msg.color.g = 0.9
+            marker_msg.color.b = 0.9
+            marker_msg.color.a = 0.9
+            marker_msg.text = str(nid)
+            marker_msg.lifetime = rospy.Duration(0)  # forever
+            marker_msg.frame_locked = True
+            markers.append(marker_msg)            
 
         # edges
         for eid in self._edges:

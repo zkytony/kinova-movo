@@ -25,7 +25,7 @@ torso_min: 0.1
 torso_max: 0.6
 
 # navigation
-goal_tolerance: 0.15
+goal_tolerance: 0.3
 
 # POMDP viewing frustum parameters
 fov: 60
@@ -39,5 +39,5 @@ occupied_threshold: 3
 mark_nearby: true
 
 # communication wait time
-action_wait_time: 30
-observation_wait_time: 30
+action_wait_time: 60
+observation_wait_time: 60

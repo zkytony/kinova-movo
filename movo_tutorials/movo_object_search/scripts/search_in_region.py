@@ -70,8 +70,8 @@ def execute_action(action_info,
         cur_robot_pose = wait_for_robot_pose()
         goal_tolerance = get_param('goal_tolerance')
         if euclidean_dist(cur_robot_pose[:3], action_info["src_pose"]) > goal_tolerance:
-            rospy.logerr("Robot is at %s, far away from expected location %s"\
-                         (str(cur_robot_pose[:3]), action_info["src_pose"]))
+            rospy.logwarn("Robot is at %s, far away from expected location %s; But won't stop moving."\
+                          % (str(cur_robot_pose[:3]), str(action_info["src_pose"])))
         
         # navigate to destination
         position = action_info["dst_pose"]  # x,y,z
@@ -85,11 +85,12 @@ def execute_action(action_info,
             rospy.logwarn("Failed to apply motion action")
             obs_info["status"] = "failed"
         obs_info["robot_pose"] = wait_for_robot_pose()
-        obs_info["torso_height"] = wait_for_torso_pose()  # provides z pose.
+        obs_info["torso_height"] = wait_for_torso_height()  # provides z pose.
         obs_info["objects_found"] = robot_state["objects_found"]
         obs_info["camera_direction"] = None  # consistent with transition model.
 
     elif action_info["type"] == ActionType.TorsoAction:
+        # TODO: THIS IS BROKEN NOW.
         torso_client = TorsoJTAS()
         # obtain current torso pose
         torso_height = wait_for_torso_height()
@@ -106,7 +107,7 @@ def execute_action(action_info,
         # Get observation about robot state
         obs_info["status"] = "success"
         obs_info["robot_pose"] = wait_for_robot_pose()
-        obs_info["torso_height"] = wait_for_torso_pose()  # provides z pose.
+        obs_info["torso_height"] = wait_for_torso_height()  # provides z pose.
         obs_info["objects_found"] = robot_state["objects_found"]
         obs_info["camera_direction"] = None  # consistent with transition model.        
 
@@ -126,7 +127,7 @@ def execute_action(action_info,
 
         # robot state            
         obs_info["robot_pose"] = wait_for_robot_pose()
-        obs_info["torso_height"] = wait_for_torso_pose()  # provides z pose.
+        obs_info["torso_height"] = wait_for_torso_height()  # provides z pose.
         obs_info["objects_found"] = robot_state["objects_found"]
             
         if obs_info["status"] == "success":
@@ -188,13 +189,14 @@ def execute_action(action_info,
             obs_info["objects_found"] = robot_state["objects_found"]
         # robot state
         obs_info["robot_pose"] = wait_for_robot_pose()
-        obs_info["torso_height"] = wait_for_torso_pose()  # provides z pose.
+        obs_info["torso_height"] = wait_for_torso_height()  # provides z pose.
         obs_info["camera_direction"] = obs_info["robot_pose"][3:]  # consistent with transition model.
     return obs_info
         
         
 def start_pcl_process(save_path, detect_ar=False):
     search_space_dimension = get_param('search_space_dimension')
+    search_space_resolution = get_param('search_space_resolution')    
     fov = get_param('fov')
     asp = get_param('aspect_ratio')
     near = get_param('near')
@@ -219,10 +221,10 @@ def start_pcl_process(save_path, detect_ar=False):
                       "--point-cloud-topic", str(point_cloud_topic),
                       "--marker-topic", str(marker_topic),
                       "--resolution", str(search_space_resolution),
-                      "--fov", str(camera_config['fov']),
-                      "--asp", str(camera_config['asp']),
-                      "--near", str(camera_config['near']),
-                      "--far", str(camera_config['far']),
+                      "--fov", str(fov),
+                      "--asp", str(asp),
+                      "--near", str(near),
+                      "--far", str(far),
                       "--sparsity", str(sparsity),
                       "--occupied-threshold", str(occupied_threshold)]\
                      + optional_args)
@@ -280,76 +282,73 @@ def main():
     sparsity = get_param("sparsity")
     occupied_threshold = get_param("occupied_threshold")
     mark_nearby = get_param("mark_nearby")
-    camera_config = {"fov": fov, "asp": asp,
-                     "near": near, "far": far}
-
+    
     # publish topo markers
     PublishTopoMarkers(topo_map_file, search_space_resolution)
 
     # Listen to robot pose
     robot_pose = wait_for_robot_pose()
-    rospy.spin()
 
-    # subprocess.Popen([VENV_PYTHON, POMDP_SCRIPT,
-    #                   # arguments
-    #                   topo_map_file,
-    #                   list_arg(robot_pose),
-    #                   str(search_space_dimension),
-    #                   list_arg(target_object_ids),
-    #                   list_arg([region_origin_x, region_origin_y]),
-    #                   str(search_space_resolution),
-    #                   action_file,
-    #                   observation_file,
-    #                   "--torso-min", str(torso_min),
-    #                   "--torso-max", str(torso_max),
-    #                   "--wait-time", str(observation_wait_time),
-    #                   "--prior-file", prior_file,
-    #                   "--fov", str(fov),
-    #                   "--asp", str(asp),
-    #                   "--near", str(near),
-    #                   "--far", str(far)])
+    subprocess.Popen([VENV_PYTHON, POMDP_SCRIPT,
+                      # arguments
+                      topo_map_file,
+                      list_arg(robot_pose),
+                      str(search_space_dimension),
+                      list_arg(target_object_ids),
+                      list_arg([region_origin_x, region_origin_y]),
+                      str(search_space_resolution),
+                      action_file,
+                      observation_file,
+                      "--torso-min", str(torso_min),
+                      "--torso-max", str(torso_max),
+                      "--wait-time", str(observation_wait_time),
+                      "--prior-file", prior_file,
+                      "--fov", str(fov),
+                      "--asp", str(asp),
+                      "--near", str(near),
+                      "--far", str(far)])
     
-    # # Wait for an action and execute this action
-    # robot_state = {"objects_found": set({})}
-    # last_action_observation = (None, None)
-    # step = 0
-    # while True:
-    #     rospy.loginfo("Waiting for action...(t=%d)" % step)
-    #     start_time = rospy.Time.now()
-    #     observation = None
-    #     observation_issued = False
-    #     while rospy.Time.now() - start_time < rospy.Duration(action_wait_time):
-    #         if os.path.exists(action_file):
-    #             rospy.loginfo("Got action! Executing action...")
-    #             with open(action_file) as f:
-    #                 action_info = yaml.load(f)
+    # Wait for an action and execute this action
+    robot_state = {"objects_found": set({})}
+    last_action_observation = (None, None)
+    step = 0
+    while True:
+        rospy.loginfo("Waiting for action...(t=%d)" % step)
+        start_time = rospy.Time.now()
+        observation = None
+        observation_issued = False
+        while rospy.Time.now() - start_time < rospy.Duration(action_wait_time):
+            if os.path.exists(action_file):
+                rospy.loginfo("Got action! Executing action...")
+                with open(action_file) as f:
+                    action_info = yaml.load(f)
 
-    #             # observation obtained from robot                    
-    #             obs_info = execute_action(action_info,  
-    #                                       robot_state,
-    #                                       last_action_observation)
-    #             robot_state["objects_found"] = obs_info["objects_found"]
+                # observation obtained from robot                    
+                obs_info = execute_action(action_info,  
+                                          robot_state,
+                                          last_action_observation)
+                robot_state["objects_found"] = obs_info["objects_found"]
                 
-    #             with open(observation_file, "w") as f:
-    #                 yaml.dump(obs_infp, f)
+                with open(observation_file, "w") as f:
+                    yaml.dump(obs_info, f)
                     
-    #             rospy.loginfo("Action executed. Observation written to file %s" % observation_file)
-    #             last_action_observation = (action_info, obs_info)
-    #             observation_issued = True
+                rospy.loginfo("Action executed. Observation written to file %s" % observation_file)
+                last_action_observation = (action_info, obs_info)
+                observation_issued = True
 
-    #             # remove action file
-    #             os.remove(action_file)
-    #             break  # break the loop                
-    #         else:
-    #             rospy.loginfo("Waiting for POMDP action...")
-    #             rospy.sleep(0.5)
-    #     if not observation_issued:
-    #         rospy.logerror("Timed out waiting for POMDP action.")
-    #         break
-    #     if robot_state["objects_found"] == set(target_object_ids):
-    #         rospy.loginfo("Done! All objects found in this region")
-    #         break
-    #     step += 1
+                # remove action file
+                os.remove(action_file)
+                break  # break the loop                
+            else:
+                rospy.loginfo("Waiting for POMDP action...")
+                rospy.sleep(0.5)
+        if not observation_issued:
+            rospy.logerror("Timed out waiting for POMDP action.")
+            break
+        if robot_state["objects_found"] == set(target_object_ids):
+            rospy.loginfo("Done! All objects found in this region")
+            break
+        step += 1
 
 if __name__ == "__main__":
     main()

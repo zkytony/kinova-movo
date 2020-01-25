@@ -2,12 +2,21 @@ import rospy
 import actionlib
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from moveit_msgs.msg import MoveItErrorCodes
+import math
+from scipy.spatial.transform import Rotation as scipyR
 moveit_error_dict = {}
 for name in MoveItErrorCodes.__dict__.keys():
     if not name[:1] == '_':
         code = MoveItErrorCodes.__dict__[name]
         moveit_error_dict[code] = name
 
+def euclidean_dist(p1, p2):
+    return math.sqrt(sum([(a - b)** 2 for a, b in zip(p1, p2)]))
+
+def yaw_diff(quat1, quat2):
+    euler1 = scipyR.from_quat(quat1).as_euler("xyz")
+    euler2 = scipyR.from_quat(quat2).as_euler("xyz")
+    return euler1[2] - euler2[2]
 
 class WaypointApply(object):
     class Status:
@@ -15,7 +24,10 @@ class WaypointApply(object):
         RUNNING = "running"
         SUCCESS = "success"
         FAIL = "fail"
-    def __init__(self, position, orientation, action_name="navigate"):
+    def __init__(self,
+                 position, orientation,
+                 action_name="navigate",
+                 xy_tolerance=0.05, rot_tolerance=0.05):
         # Get an action client
         self.client = actionlib.SimpleActionClient('movo_move_base', MoveBaseAction)
         rospy.loginfo("Waiting for movo_move_base AS...")
@@ -27,6 +39,11 @@ class WaypointApply(object):
 
         self.status = WaypointApply.Status.NOT_RUNNING
         self.action_name = action_name
+        self._position = position
+        self._orientation = orientation
+        self._xy_tolerance = xy_tolerance
+        self._rot_tolerance = rot_tolerance
+        self._goal_reached = False
 
         # Define the goal
         rospy.loginfo("Waypoint (%.2f,%.2f) and (%.2f,%.2f,%.2f,%.2f) is sent.", position[0], position[1], orientation[0], \
@@ -44,17 +61,34 @@ class WaypointApply(object):
 
     def waypoint_execute(self):
         self.status = WaypointApply.Status.RUNNING
-        self.client.send_goal(self.goal, self.done_cb, self.active_cb, self.feedback_cb)
-        if self.client.wait_for_result():
-            rospy.loginfo("Goal is reached at (%.2f, %.2f).", self.goal.target_pose.pose.position.x, self.goal.target_pose.pose.position.y)
-
-    def active_cb(self):
-        rospy.loginfo("Navigation action "+str(self.action_name)+" is now being processed by the Action Server...")
+        self.client.send_goal(self.goal, self.done_cb, feedback_cb=self.feedback_cb)
+        delay = rospy.Duration(0.1)
+        while not self.client.wait_for_result(delay) and not rospy.is_shutdown():
+            if self._goal_reached:
+                rospy.loginfo("Goal has been reached by the robot actually. So cancel goal.")
+                self.status = WaypointApply.Status.SUCCESS
+                self.client.cancel_goal()
+                break
+            if self.status == WaypointApply.Status.FAIL:
+                rospy.logerr("Could not reach goal.")
+                self.client.cancel_goal()                
+                break
 
     def feedback_cb(self, feedback):
-        #To print current pose at each feedback:
-        #rospy.loginfo("Feedback for goal "+str(self.action_name)+": "+str(feedback))
-        rospy.loginfo("Feedback for goal pose "+str(self.action_name)+" received")
+        base_position = feedback.base_position
+        curx = base_position.pose.position.x
+        cury = base_position.pose.position.y
+        curz = base_position.pose.position.z
+        curqx = base_position.pose.orientation.x
+        curqy = base_position.pose.orientation.y
+        curqz = base_position.pose.orientation.z
+        curqw = base_position.pose.orientation.w
+        # Check if already reached goal
+        if euclidean_dist((curx, cury, curz), self._position) <= self._xy_tolerance\
+           and yaw_diff((curqx, curqy, curqz, curqw), self._orientation) <= self._rot_tolerance:
+            self._goal_reached = True
+            rospy.loginfo("Goal already reached within tolerance.")
+        
 
     def done_cb(self, status, result):
         # Reference for terminal status values: http://docs.ros.org/diamondback/api/actionlib_msgs/html/msg/GoalStatus.html
