@@ -11,12 +11,12 @@ for name in MoveItErrorCodes.__dict__.keys():
         moveit_error_dict[code] = name
 
 def euclidean_dist(p1, p2):
-    return math.sqrt(sum([(a - b)** 2 for a, b in zip(p1, p2)]))
+    dist = math.sqrt(sum([(a - b)** 2 for a, b in zip(p1, p2)]))
+    return dist
 
 def yaw_diff(quat1, quat2):
     euler1 = scipyR.from_quat(quat1).as_euler("xyz")
     euler2 = scipyR.from_quat(quat2).as_euler("xyz")
-    rospy.loginfo(euler1[2] - euler2[2])
     return abs(euler1[2] - euler2[2])
 
 class WaypointApply(object):
@@ -28,7 +28,7 @@ class WaypointApply(object):
     def __init__(self,
                  position, orientation,
                  action_name="navigate",
-                 xy_tolerance=0.05, rot_tolerance=0.3):
+                 xy_tolerance=0.1, rot_tolerance=0.3):
         # Get an action client
         self.client = actionlib.SimpleActionClient('movo_move_base', MoveBaseAction)
         rospy.loginfo("Waiting for movo_move_base AS...")
@@ -85,8 +85,11 @@ class WaypointApply(object):
         curqz = base_position.pose.orientation.z
         curqw = base_position.pose.orientation.w
         # Check if already reached goal
-        if euclidean_dist((curx, cury, curz), self._position) <= self._xy_tolerance\
-           and yaw_diff((curqx, curqy, curqz, curqw), self._orientation) <= self._rot_tolerance:
+        dist = euclidean_dist((curx, cury, curz), self._position)
+        angle = yaw_diff((curqx, curqy, curqz, curqw), self._orientation)
+        rospy.loginfo("(feedback)[dist_gap: %.5f     | angle_gap: %.5f]" % (dist, angle))
+        if dist <= self._xy_tolerance\
+           and angle <= self._rot_tolerance:
             self._goal_reached = True
             rospy.loginfo("Goal already reached within tolerance.")
         

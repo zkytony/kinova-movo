@@ -195,9 +195,9 @@ class PCLProcessor:
         wf_voxels = {}
         for voxel_pose in voxels:
             x,y,z = voxel_pose
-            wf_pose = (x + trans[0],
-                       y + trans[1],
-                       z + trans[2])
+            wf_pose = (x + float(trans[0]),
+                       y + float(trans[1]),
+                       z + float(trans[2]))
             wf_voxels[wf_pose] = (wf_pose, voxels[voxel_pose][1])
         return wf_voxels
             
@@ -229,7 +229,7 @@ class PCLProcessor:
                 i += 1
 
             # forget about the homogenous coordinate; use xyz as key                
-            xyz = tuple(xyz[:3])
+            xyz = tuple(map(float, xyz[:3]))
             if occupied:
                 xyz2 = (xyz[0], xyz[1], xyz[2]+1)  # TODO: HACK
                 voxels[xyz] = (xyz, VOXEL_OCCUPIED)

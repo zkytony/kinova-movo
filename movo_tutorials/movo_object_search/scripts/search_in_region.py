@@ -80,10 +80,10 @@ def execute_action(action_info,
         orientation = (0,0,0,1)  # equivalent to (0,0,0) in euler.
         if WaypointApply(position, orientation).status == WaypointApply.Status.SUCCESS:
             # Successfully moved robot; Return an observation about the robot state.
-            rospy.loginfo("Applied motion action successfully")
+            rospy.loginfo("APPLIED MOTION ACTION SUCCESSFULLY")
             obs_info["status"] = "success"
         else:
-            rospy.logwarn("Failed to apply motion action")
+            rospy.logwarn("FAILED TO APPLY MOTION ACTION")
             obs_info["status"] = "failed"
         obs_info["robot_pose"] = wait_for_robot_pose()
         obs_info["torso_height"] = wait_for_torso_height()  # provides z pose.
