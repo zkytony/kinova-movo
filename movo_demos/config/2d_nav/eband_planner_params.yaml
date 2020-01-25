@@ -1,24 +1,24 @@
 # THESE Parameters should be set again on the real robot.
 
-# SIMULATION parameters
-EBandPlannerROS:
-  differential_drive: false
-  max_acceleration: 1.5
-  max_vel_lin: 0.5
-  max_vel_th: 1.0  # NOTE: for sim
-  min_vel_lin: 0.0
-  min_vel_th: 0.0
-  xy_goal_tolerance: 0.3 #0.02
-  yaw_goal_tolerance: 0.2 #0.01
-
-# REAL
+# # SIMULATION parameters
 # EBandPlannerROS:
 #   differential_drive: false
-#   max_acceleration: 2.5 #1.5
+#   max_acceleration: 1.5
 #   max_vel_lin: 0.5
 #   max_vel_th: 1.0  # NOTE: for sim
 #   min_vel_lin: 0.0
 #   min_vel_th: 0.0
 #   xy_goal_tolerance: 0.3 #0.02
 #   yaw_goal_tolerance: 0.2 #0.01
+
+# REAL
+EBandPlannerROS:
+  differential_drive: false
+  max_acceleration: 2.5 #1.5
+  max_vel_lin: 0.5
+  max_vel_th: 1.0  # NOTE: for sim
+  min_vel_lin: 0.0
+  min_vel_th: 0.0
+  xy_goal_tolerance: 0.3 #0.02
+  yaw_goal_tolerance: 0.2 #0.01
   
