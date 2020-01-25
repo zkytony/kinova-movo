@@ -100,9 +100,7 @@ def execute_action(action_info,
         else:
             desired_height = torso_height - action_info["displacement"]
         # TODO: This is probably not right
-        torso_client.add_point([desired_height], 0.0)
-        torso_client.start()
-        torso_client.wait(10.0)
+        torso_client.move(torso_height, desired_height)
         rospy.loginfo("Torso motion complete")
 
         # Get observation about robot state

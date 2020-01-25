@@ -112,3 +112,17 @@ class TorsoJTAS(object):
         self._goal = FollowJointTrajectoryGoal()
         self._goal.goal_time_tolerance = self._goal_time_tolerance
         self._goal.trajectory.joint_names = ['linear_joint']
+
+    def move(self, current_height, desired_height):
+        total_time_torso = 0.0
+        points_torso = [list(current_height), 0.0]
+        for i in range(0,1):
+            pos = desired_height # Maximum height: 0.4.
+            vel = 0.05
+            dt = abs(pos)/vel
+            total_time_torso+=dt
+            traj_torso.add_point([pos],total_time_torso)
+        traj_torso.start()
+        traj_torso.wait(total_time_torso+3.0)
+        print("Exiting - Joint Trajectory Action Test Complete")
+        

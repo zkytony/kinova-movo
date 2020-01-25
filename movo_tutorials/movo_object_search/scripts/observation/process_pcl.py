@@ -208,36 +208,69 @@ class PCLProcessor:
         for point in sensor_msgs.point_cloud2.read_points(msg, skip_nans=True):
             points.append(point)
         voxels = {}  # map from voxel_pose xyz to label
-        oalt = {}
-        pesp_to_plel = {}  # map from xyz in perspective to xy key in parallel
-        for xyz in self._cam.volume:
+        parallel_occupied = {}
+        for volume_voxel_pose in self._cam.volume:
             # Iterate over the whole point cloud sparsely
             i = 0
             count = 0
             occupied = False
             # In the camera model, robot looks at -z direction.
             # But robot actually looks at +z in the real camera.
-            original_z = xyz[2]
-            xyz[2] = abs(xyz[2])
+            original_z = volume_voxel_pose[2]
+            volume_voxel_pose[2] = abs(volume_voxel_pose[2])
             for point in points:
                 if i % self._sparsity == 0:
-                    if self.point_in_volume(xyz, point):
+                    if self.point_in_volume(volume_voxel_pose, point):
                         count += 1
                         if count > self._occupied_threshold:
                             occupied = True
                             break
                 i += 1
-
             # forget about the homogenous coordinate; use xyz as key                
-            xyz = tuple(map(float, xyz[:3]))
+            voxel_pose = tuple((float(volume_voxel_pose[0]),
+                                float(volume_voxel_pose[1]),
+                                float(original_z)))
             if occupied:
-                xyz2 = (xyz[0], xyz[1], xyz[2]+1)  # TODO: HACK
-                voxels[xyz] = (xyz, VOXEL_OCCUPIED)
-                voxels[xyz2] = (xyz2, VOXEL_UNKNOWN)                
+                # xyz2 = (xyz[0], xyz[1], xyz[2]+1)  # TODO: HACK
+                voxels[voxel_pose] = (voxel_pose, VOXEL_OCCUPIED)
+                # voxels[xyz2] = (xyz2, VOXEL_UNKNOWN)
+
+                parallel_point = self._cam.perspectiveTransform(voxel_pose[0], voxel_pose[1], voxel_pose[2],
+                                                                (0,0,0,0,0,0))
+                xy_key = (round(parallel_point[0], 2), round(parallel_point[1], 2))
+                if xy_key not in parallel_occupied:
+                    parallel_occupied[xy_key] = (occupied, parallel_point[2])
+                else:
+                    if parallel_point[2] > parallel_occupied[xy_key][1]:
+                        parallel_occupied[xy_key] = (occupied, parallel_point[2])
             else:
-                voxels[xyz] = (xyz, VOXEL_FREE)
-        # TODO: Actually do frustum filter
-        return voxels
+                # didn't know if there are points there
+                voxels[voxel_pose] = (voxel_pose, VOXEL_UNKNOWN)
+
+        final_voxels = {}
+        for voxel_pose in voxels:
+            # Now, decide the label of each voxel
+            voxel_pose_ros = (voxel_pose[0], voxel_pose[1], abs(voxel_pose[2]))
+            _, label = voxels[voxel_pose]
+            if label == VOXEL_OCCUPIED:
+                # already occupied, so no change.
+                final_voxels[voxel_pose_ros] = (voxel_pose_ros, VOXEL_OCCUPIED)
+            else:
+                assert label == VOXEL_UNKNOWN
+                parallel_point = self._cam.perspectiveTransform(voxel_pose[0], voxel_pose[1], voxel_pose[2],
+                                                                (0,0,0,0,0,0))
+                xy_key = (round(parallel_point[0], 2), round(parallel_point[1], 2))
+                if xy_key in parallel_occupied:
+                    if parallel_point[2] > parallel_occupied[xy_key][1]:
+                        # the voxel is closer to the camera, so it's free.
+                        final_voxels[voxel_pose_ros] = (voxel_pose_ros, VOXEL_UNKNOWN)
+                    else:
+                        # otherwise --> it's unknown
+                        final_voxels[voxel_pose_ros] = (voxel_pose_ros, VOXEL_UNKNOWN)
+                else:
+                    final_voxels[voxel_pose_ros] = (voxel_pose_ros, VOXEL_FREE)
+
+        return final_voxels
 
     def _make_pose_msg(self, posit, orien):
         pose = Pose()
@@ -313,6 +346,7 @@ def main():
     parser.add_argument('-M', '--mark-ar-tag', action="store_true")
     parser.add_argument('-N', '--mark-nearby', action="store_true")
     parser.add_argument('-r', '--resolution', type=float,
+                        default=0.3,
                         help='resolution of search region (i.e. volume). Format, float')
     parser.add_argument('--fov', type=float,
                         help="FOV angle",
@@ -331,7 +365,7 @@ def main():
                         default=500)
     parser.add_argument('--occupied-threshold', type=float,
                         help="Number of points needed in a cube to mark it as occupied",
-                        default=3)
+                        default=5)
     args = parser.parse_args()
     rospy.init_node("movo_pcl_processor",
                     anonymous=True, disable_signals=True)
