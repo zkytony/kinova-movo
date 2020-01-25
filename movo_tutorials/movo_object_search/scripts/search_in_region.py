@@ -247,11 +247,19 @@ def main():
     rospy.init_node("movo_object_search_in_region",
                     anonymous=True)
 
-    region_origin_x = get_param('region_origin_x')
-    region_origin_y = get_param('region_origin_y')
-
-    search_space_dimension = get_param('search_space_dimension')
-    search_space_resolution = get_param('search_space_resolution')
+    region_file = get_param("region_file")
+    region_name = get_param("region_name")
+    with open(region_file) as f:
+        data = json.load(f)
+    region_origin_x, region_origin_y = tuple(map(float, data["regions"][region_name]["origin"][:2]))
+    search_space_dimension = int(data["dimension"])
+    search_space_resolution = float(data["resolution"])
+    
+    # region_origin_x = get_param('region_origin_x')
+    # region_origin_y = get_param('region_origin_y')
+    # search_space_dimension = get_param('search_space_dimension')
+    # search_space_resolution = get_param('search_space_resolution')
+    
     target_object_ids = get_param('target_object_ids')  # a list
     _size = search_space_dimension * search_space_resolution
     rospy.loginfo("Total search space area: %.3f x %.3f x %.3f m^3"
