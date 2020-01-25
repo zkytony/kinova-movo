@@ -1,8 +1,11 @@
+# THESE Parameters should be set again on the real robot.
+
+# SIMULATION parameters
 EBandPlannerROS:
   differential_drive: false
-  max_acceleration: 0.5 #2.5 --> robot falls over in Gazebo
-  max_vel_lin: 0.5
-  max_vel_th: 0.5
+  max_acceleration: 2.5
+  max_vel_lin: 1.5
+  max_vel_th: 0.8  # NOTE: for sim
   min_vel_lin: 0.0
   min_vel_th: 0.0
   xy_goal_tolerance: 0.3 #0.02
