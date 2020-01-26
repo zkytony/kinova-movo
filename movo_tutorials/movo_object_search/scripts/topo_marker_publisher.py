@@ -99,6 +99,14 @@ class PublishTopoMarkers:
                                     latch=True)
         self._pub.publish(markers_msg)
 
+    @property
+    def nodes(self):
+        return self._nodes
+
+    @property
+    def edges(self):
+        return self._edges
+
     def make_markers_msg(self):
         """Convert voxels to Markers message for visualizatoin"""
         timestamp = rospy.Time.now()
