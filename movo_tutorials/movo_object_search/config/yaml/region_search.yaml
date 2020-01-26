@@ -8,9 +8,10 @@ topo_map_file: "/home/kaiyuzh/movo_ws/src/movo_tutorials/movo_object_search/maps
 region_file: "/home/kaiyuzh/movo_ws/src/movo_tutorials/movo_object_search/maps/test_simple_regions.json"
 region_name: "table_area"
 
+prior_file: "/home/kaiyuzh/movo_ws/src/movo_tutorials/movo_object_search/config/yaml/prior.yaml"
 observation_file: "/home/kaiyuzh/movo_ws/src/movo_tutorials/movo_object_search/tmp/obs_info.yaml"
 action_file: "/home/kaiyuzh/movo_ws/src/movo_tutorials/movo_object_search/tmp/action_info.yaml"
-prior_file: "/home/kaiyuzh/movo_ws/src/movo_tutorials/movo_object_search/tmp/prior.yaml"
+
 
 
 # topics
