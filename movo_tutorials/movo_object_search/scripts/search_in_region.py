@@ -91,22 +91,21 @@ def execute_action(action_info,
         obs_info["camera_direction"] = None  # consistent with transition model.
 
     elif action_info["type"] == ActionType.TorsoAction:
-        # TODO: THIS IS BROKEN NOW.
-        torso_client = TorsoJTAS()
-        # obtain current torso pose
         torso_height = wait_for_torso_height()
-        if action_info['direction'].endswith("up"):
-            desired_height = torso_height + action_info["displacement"]
-        else:
-            desired_height = torso_height - action_info["displacement"]
-        # TODO: This is probably not right
-        torso_client.move(torso_height, desired_height)
-        rospy.loginfo("Torso motion complete")
+        desired_height = torso_height + action_info["displacement"]
+        TorsoJTAS.move(desired_height, current_height=torso_height)
 
+        # Verify
+        actual_height = wait_for_torso_height()
+        if abs(actual_height - desired_height) > 1e-2:
+            rospy.logerr("Torso did not move to desired height. (Desired: %.3f ; Actual: %.3f)"
+                         % (actual_height, desired_height))
+        else:
+            rospy.loginfo("Torso motion complete. Now torso at %.3f" % actual_height)
         # Get observation about robot state
         obs_info["status"] = "success"
         obs_info["robot_pose"] = wait_for_robot_pose()
-        obs_info["torso_height"] = wait_for_torso_height()  # provides z pose.
+        obs_info["torso_height"] = actual_height  # provides z pose.
         obs_info["objects_found"] = robot_state["objects_found"]
         obs_info["camera_direction"] = None  # consistent with transition model.        
 
