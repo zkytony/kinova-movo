@@ -28,18 +28,11 @@ from action.head_and_torso import TorsoJTAS
 from action.action_type import ActionType
 from scipy.spatial.transform import Rotation as scipyR
 from topo_marker_publisher import PublishTopoMarkers, PublishSearchRegionMarkers
-
-FROM_LAUNCH = False
+from ros_util import get_param
 
 # Start a separate process to run POMDP; Use the virtualenv
 VENV_PYTHON = "/home/kaiyuzh/pyenv/py37/bin/python"
 POMDP_SCRIPT = "/home/kaiyuzh/repo/3d-moos-pomdp/moos3d/robot_demo/build_pomdp.py"
-
-def get_param(param):
-    if FROM_LAUNCH:
-        return rospy.get_param("~" + param)
-    else:
-        return rospy.get_param(param)
 
 def euclidean_dist(p1, p2):
     return math.sqrt(sum([(a - b)** 2 for a, b in zip(p1, p2)]))

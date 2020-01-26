@@ -1,22 +1,26 @@
+#!/usr/bin/env python
 # Visit every node of a topological graph
 
+import rospy
 from search_in_region import get_param
 from action.waypoint import WaypointApply
+from topo_marker_publisher import PublishTopoMarkers
 
 def main():
     rospy.init_node("movo_topo_map_visitor",
                     anonymous=True)
     topo_map_file = get_param('topo_map_file')
-    search_space_resolution = get_param("search_space_resolution")    
-    pub = PublishTopoMarkers(topo_map_file, search_space_resolution)
+    resolution = get_param("/topo_marker_publisher/resolution")
+    # don't actually publish; it's already published    
+    pub = PublishTopoMarkers(topo_map_file, resolution, publish=False)
     
     waypoints = []
     i = 0
     for nid in sorted(pub.nodes):
         posit = pub.nodes[nid]
         orien = (0,0,0,1)
-        waypoints.append(((posit, orient), nid))
-        rospy.loginfo("[%d] Node %d, %s" % (i, str(posit)))
+        waypoints.append(((posit, orien), nid))
+        rospy.loginfo("[%d] Node %d, %s" % (i, nid, str(posit)))
         i += 1
 
     i = 0
