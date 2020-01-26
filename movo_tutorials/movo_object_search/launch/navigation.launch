@@ -2,6 +2,12 @@
 <!-- Launches the necessary components for navigation -->
 <launch>
   <arg name="map_file" default="test_simple"/>
+  <arg name="nogo_map_file" default="$(arg map_file)-nogo"/>  
+
+  <!-- Lanch no-go map server -->
+  <node name="no_go_map_server" pkg="map_server" type="map_server" args="$(find movo_demos)/maps/$(arg nogo_map_file).yaml">
+    <remap from="/map" to="/map_nogo"/>
+  </node>
   
   <include file="$(find movo_demos)/launch/nav/map_nav.launch">
     <arg name="map_file" value="$(arg map_file)"/>
