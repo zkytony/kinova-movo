@@ -1,3 +1,27 @@
+# Package for MOVO Object Search
+
+### Creating this package
+```
+catkin_create_pkg movo_object_search ar_track_alvar std_msgs rospy roscpp pcl_ros pcl_msgs
+catkin_make -DCATKIN_WHITELIST_PACKAGES="movo_object_search"
+```
+
+### Start up movo
+
+```
+roslaunch movo_bringup movo_system.launch
+```
+
+### Run movo RVIZ
+
+```
+roslaunch movo_viz view_robot.launch
+```
+
+Note that to visualize the point cloud, go to Sensing-> PointCloud2, and make sure
+the Topic is `/movo_camera/point_cloud/points
+
+
 ## How-tos
 
 ### How to start a Gazebo simulation
