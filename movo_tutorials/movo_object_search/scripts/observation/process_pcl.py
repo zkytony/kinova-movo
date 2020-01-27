@@ -22,6 +22,8 @@ VOXEL_OCCUPIED = "occupied"
 VOXEL_FREE = "free"
 VOXEL_UNKNOWN = "unknown"
 
+#DEPRECATED! This module is too expensive --> Requires processing raw point cloud which is infeasible over WiFi conectinons.
+#ALSO, it does not take into account of marker size (i.e. you can't have multiple marker sizes)
 # A very good ROS Ask question about the point cloud message
 # https://answers.ros.org/question/273182/trying-to-understand-pointcloud2-msg/
 class PCLProcessor:
@@ -102,7 +104,7 @@ class PCLProcessor:
             if self._save_path is not None:
                 wf_voxels = self._transform_worldframe(voxels)
                 with open(self._save_path, "w") as f:
-                    yaml.dump(wf_voxels, f)
+                    yaml.safe_dump(wf_voxels, f)
                     if self._quit_when_saved:
                         self._quit = True
             # publish message
@@ -125,7 +127,7 @@ class PCLProcessor:
             for artag in artag_msg.markers:
                 # If artag id is one of the target ids
                 if self._target_ids is not None:
-                    if artag.id not in self._target_ids:
+                    if int(artag.id) not in self._target_ids:
                         continue  # not one of the targets
                 
                 # Transform pose to voxel_marker_frame
@@ -141,20 +143,20 @@ class PCLProcessor:
                 # (Approach1) Find the voxel_pose in the volume closest to above
                 if not self._mark_nearby:
                     closest_voxel_pose = min(voxels, key=lambda voxel_pose: util.euclidean_dist(voxel_pose, arvoxel_pose))
-                    voxels[closest_voxel_pose] = (closest_voxel_pose, artag.id)
+                    voxels[closest_voxel_pose] = (closest_voxel_pose, int(artag.id))
                 else:
                     # (Approach2) Mark all voxel_poses in the volume within a certain dist.
                     nearby_voxel_poses = {voxel_pose
                                           for voxel_pose in voxels
                                           if util.euclidean_dist(voxel_pose, arvoxel_pose) <= 1}
                     for voxel_pose in nearby_voxel_poses:
-                        voxels[voxel_pose] = (voxel_pose, artag.id)
+                        voxels[voxel_pose] = (voxel_pose, int(artag.id))
 
             # saving
             if self._save_path is not None:
                 wf_voxels = self._transform_worldframe(voxels)
                 with open(self._save_path, "w") as f:
-                    yaml.dump(wf_voxels, f)
+                    yaml.safe_dump(wf_voxels, f)
                     if self._quit_when_saved:
                         self._quit = True
                         
@@ -203,13 +205,15 @@ class PCLProcessor:
         (trans,rot) = self._tf_listener.lookupTransform(self._world_frame,
                                                         self._voxel_marker_frame,
                                                         rospy.Time(0))
-        wf_voxels = {}
+        wf_voxels = {}   # this is what will be dumped; So be safe.
+        i = 0
         for voxel_pose in voxels:
             x,y,z = voxel_pose
-            wf_pose = (x + float(trans[0]),
-                       y + float(trans[1]),
-                       z + float(trans[2]))
-            wf_voxels[wf_pose] = (wf_pose, voxels[voxel_pose][1])
+            wf_pose = (float(x + trans[0]),
+                       float(y + trans[1]),
+                       float(z + trans[2]))
+            wf_voxels[i] = (wf_pose, voxels[voxel_pose][1])
+            i += 1
         return wf_voxels
             
 
@@ -410,3 +414,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+o

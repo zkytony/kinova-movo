@@ -1,13 +1,13 @@
 {
    "regions":{
       "shelf-corner":{
-         "origin":[
-            2.3500000000000014,
-            1.6500000000000004,
-            0
+          "origin":[
+              0.500000000000007,
+              2.0500000000000014,
+              0
          ],
          "dimension":16,
-         "resolution":0.18437500000000007
+         "resolution":0.25
       },
       "whiteboard-area":{
          "origin":[

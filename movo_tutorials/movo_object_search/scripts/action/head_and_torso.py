@@ -159,7 +159,7 @@ class TorsoJTAS(object):
             assert msg.joint_names[0] == 'linear_joint', "Joint is not linear joint (not torso)."
             position = msg.actual.positions[0]
         else:
-            assert torso_topic == "/movo/linear_actuator/joint_states"
+            assert torso_topic == "/movo/linear_actuator/joint_states"  # real robot
             msg = rospy.wait_for_message(torso_topic, JointState, timeout=15)
             assert msg.name[0] == 'linear_joint', "Joint is not linear joint (not torso)."        
             position = msg.position[0]

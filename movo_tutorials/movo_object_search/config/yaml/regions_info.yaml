@@ -1,4 +1,6 @@
-region_0: {
-  position: [1.0, 0.0],
-  orientation: [0.0, 0.0, 0.0, 1.0]
-}
+# Lists objects that may be contained within each search region.
+shelf_corner_target_ids:
+  - 68
+  - 396
+  - 77
+  - 1

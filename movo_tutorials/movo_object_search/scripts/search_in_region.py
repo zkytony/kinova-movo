@@ -116,8 +116,10 @@ def execute_action(action_info,
             rospy.logwarn("Failed to rotate robot")
             obs_info["status"] = "failed"
 
-        # robot state            
+        # robot state
+        rospy.loginfo("Finished rotation. Now observing...")        
         obs_info["robot_pose"] = wait_for_robot_pose()
+        rospy.loginfo("Finished rotation. hello...")        
         obs_info["torso_height"] = wait_for_torso_height()  # provides z pose.
         obs_info["objects_found"] = robot_state["objects_found"]
             
@@ -126,11 +128,19 @@ def execute_action(action_info,
             # one with ar tag detection, one without. Upon publishing the
             # volumetric observation, these scripts will save the observation
             # to a file.
-            rospy.loginfo("Projecting field of view; Processing point cloud.")
+            point_cloud_topic = get_param("point_cloud_topic")
+            rospy.loginfo("Projecting field of view; Processing point cloud from %s." % point_cloud_topic)
             start_time = rospy.Time.now()
             voxels_dir = os.path.dirname(get_param('observation_file'))
             vpath_ar = os.path.join(voxels_dir, "voxels_ar.yaml")
             vpath = os.path.join(voxels_dir, "voxels.yaml")
+
+            # clear existing 
+            if os.path.exists(vpath):
+                os.remove(vpath)
+            if os.path.exists(vpath_ar):
+                os.remove(vpath_ar)  
+            
             start_pcl_process(save_path=vpath_ar,
                               detect_ar=True)
             start_pcl_process(save_path=vpath,
@@ -150,12 +160,12 @@ def execute_action(action_info,
                 # use ar tag detection observation
                 rospy.loginfo("Using the voxels that may contain AR tag labels.")
                 with open(vpath_ar) as f:
-                    voxels = yaml.load(f)
+                    voxels = yaml.safe_load(f)
             else:
                 with open(vpath) as f:
-                    voxels = yaml.load(f)
+                    voxels = yaml.safe_load(f)
             obs_info["camera_direction"] = orientation  # consistent with transition model.
-            obs_info["voxels"] = voxels # volumetric observation
+            obs_info["voxels"] = voxels # volumetric observation; (from voxel id (int) to (voxel_pose, label)!
         else:
             # robot didn't reach the desired rotation; no observation received
             obs_info["camera_direction"] = None  # consistent with transition model.
@@ -238,18 +248,23 @@ def main():
 
     # This is the json region file
     regions_file = get_param("regions_file")
-    region_name = get_param("region_name") 
+    # region_name = get_param("region_name")
+    region_name = "shelf-corner"
     with open(regions_file) as f:
         data = json.load(f)
         region_data = data["regions"][region_name]
     region_origin = tuple(map(float, region_data["origin"][:2]))
     search_space_dimension = int(region_data["dimension"])
     search_space_resolution = float(region_data["resolution"])
+    rospy.set_param("search_space_dimension", search_space_dimension)
+    rospy.set_param("search_space_resolution", search_space_resolution)
+    rospy.set_param("region_name", region_name)
     
     # This parameter should be loaded by the regions_info.yaml file
     target_object_ids = get_param("%s_target_ids" % (region_name.replace("-", "_")))
+    rospy.set_param("target_object_ids", target_object_ids)
     
-    target_object_ids = get_param('target_object_ids')  # a list
+    # target_object_ids = get_param('target_object_ids')  # a list
     _size = search_space_dimension * search_space_resolution
     rospy.loginfo("Total search space area: %.3f x %.3f x %.3f m^3"
                   % (_size, _size, _size))
@@ -329,7 +344,7 @@ def main():
                 robot_state["objects_found"] = obs_info["objects_found"]
                 
                 with open(observation_file, "w") as f:
-                    yaml.dump(obs_info, f)
+                    yaml.safe_dump(obs_info, f)
                     
                 rospy.loginfo("Action executed. Observation written to file %s" % observation_file)
                 last_action_observation = (action_info, obs_info)

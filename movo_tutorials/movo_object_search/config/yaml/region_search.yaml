@@ -12,8 +12,8 @@
 
 ## CIT 122
 topo_map_file: "/home/kaiyuzh/movo_ws/src/movo_tutorials/movo_object_search/maps/cit122_topo_map.json"
-region_file: "/home/kaiyuzh/movo_ws/src/movo_tutorials/movo_object_search/maps/cit122_regions.json"
-region_name: "shelf-corner"
+regions_file: "/home/kaiyuzh/movo_ws/src/movo_tutorials/movo_object_search/maps/cit122_regions.json"
+# region_name: "shelf-corner" Set in launch file
 
 prior_file: "/home/kaiyuzh/movo_ws/src/movo_tutorials/movo_object_search/config/yaml/prior.yaml"
 observation_file: "/home/kaiyuzh/movo_ws/src/movo_tutorials/movo_object_search/tmp/obs_info.yaml"
@@ -21,19 +21,25 @@ action_file: "/home/kaiyuzh/movo_ws/src/movo_tutorials/movo_object_search/tmp/ac
 
 # topics
 robot_pose_topic: "/amcl_pose"
-torso_height_topic: "/movo/torso_controller/state"
+torso_height_topic: "/movo/linear_actuator/joint_states" #x/movo/torso_controller/state"
+head_topic: "/movo/head_controller/state"
 marker_topic: "/movo_pcl_processor/observation_markers"
-point_cloud_topic: "/movo_camera/sd/points"
+point_cloud_topic: "/kinect2/sd/points"
 
-# target objects
-target_object_ids:
-  - 0
-  - 1
-  - 2
+# # target objects
+# target_object_ids:
+#   - 0
+#   - 1
+#   - 2
 
 # torso
-torso_min: 0.1
-torso_max: 0.6
+torso_min: 0.02
+torso_max: 0.55
+torso_low_thres: 0.06 # below this height, the robot will tilt down to look at the floor.
+torso_high_thres: 0.44 # above this height, the robot will tilt up to look at the floor.
+torso_step_size: 0.20
+tilt_up_angles: 15 # tilting up is rotation around x axis
+tilt_down_angles: 40 # tilting up is rotation around x axis
 
 # navigation
 goal_tolerance: 0.3
