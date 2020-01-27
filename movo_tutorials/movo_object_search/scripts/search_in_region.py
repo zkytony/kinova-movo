@@ -230,28 +230,24 @@ def wait_for_robot_pose():
 
 def wait_for_torso_height():
     torso_topic = get_param('torso_height_topic')  # /movo/linear_actuator/joint_states
-    msg = rospy.wait_for_message(torso_topic, JointTrajectoryControllerState, timeout=15)
-    assert msg.joint_names[0] == 'linear_joint', "Joint is not linear joint (not torso)."
-    position = msg.actual.positions[0]
-    return position
+    return TorsoJTAS.wait_for_torso_height(torso_topic=torso_topic)
 
 def main():
     rospy.init_node("movo_object_search_in_region",
                     anonymous=True)
 
-    region_file = get_param("region_file")
-    region_name = get_param("region_name")
-    with open(region_file) as f:
+    # This is the json region file
+    regions_file = get_param("regions_file")
+    region_name = get_param("region_name") 
+    with open(regions_file) as f:
         data = json.load(f)
         region_data = data["regions"][region_name]
     region_origin = tuple(map(float, region_data["origin"][:2]))
     search_space_dimension = int(region_data["dimension"])
     search_space_resolution = float(region_data["resolution"])
     
-    # region_origin_x = get_param('region_origin_x')
-    # region_origin_y = get_param('region_origin_y')
-    # search_space_dimension = get_param('search_space_dimension')
-    # search_space_resolution = get_param('search_space_resolution')
+    # This parameter should be loaded by the regions_info.yaml file
+    target_object_ids = get_param("%s_target_ids" % (region_name.replace("-", "_")))
     
     target_object_ids = get_param('target_object_ids')  # a list
     _size = search_space_dimension * search_space_resolution

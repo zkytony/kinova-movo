@@ -69,6 +69,14 @@ class HeadJTAS(object):
         self._goal.goal_time_tolerance = self._goal_time_tolerance
         self._goal.trajectory.joint_names = ['pan_joint','tilt_joint']
 
+    @staticmethod
+    def wait_for_head(head_topic="/movo/head_controller/state"):
+        msg = rospy.wait_for_message(head_topic, JointTrajectoryControllerState, timeout=15)
+        assert msg.joint_names[0] == 'pan_joint', "Joint is not head joints (need pan or tilt)."
+        cur_pan = msg.actual.positions[0]
+        cur_tilt = msg.actual.positions[1]
+        return cur_pan, cur_tilt
+
     @classmethod
     def move(cls, desired_pan, desired_tilt, head_topic="/movo/head_controller/state"):
         """desired_pan, desired_tilt (radian) are angles of pan and tilt joints of the head"""
@@ -144,13 +152,25 @@ class TorsoJTAS(object):
         self._goal.goal_time_tolerance = self._goal_time_tolerance
         self._goal.trajectory.joint_names = ['linear_joint']
 
+    @staticmethod
+    def wait_for_torso_height(torso_topic="/movo/torso_controller/state"):
+        if torso_topic=="/movo/torso_controller/state":
+            msg = rospy.wait_for_message(torso_topic, JointTrajectoryControllerState, timeout=15)
+            assert msg.joint_names[0] == 'linear_joint', "Joint is not linear joint (not torso)."
+            position = msg.actual.positions[0]
+        else:
+            assert torso_topic == "/movo/linear_actuator/joint_states"
+            msg = rospy.wait_for_message(torso_topic, JointState, timeout=15)
+            assert msg.name[0] == 'linear_joint', "Joint is not linear joint (not torso)."        
+            position = msg.position[0]
+        return position
+        
+
     @classmethod
     def move(cls, desired_height, current_height=None, torso_topic="/movo/torso_controller/state"):
         # get current position
         if current_height is None:
-            msg = rospy.wait_for_message(torso_topic, JointTrajectoryControllerState, timeout=15)
-            assert msg.joint_names[0] == 'linear_joint', "Joint is not linear joint (not torso)."
-            current_height = msg.actual.positions[0]
+            current_height = TorsoJTAS.wait_for_torso_height(torso_topic=torso_topic)
         traj_torso = TorsoJTAS()
         total_time_torso = 0.0
         traj_torso.add_point([current_height], 0.0)
