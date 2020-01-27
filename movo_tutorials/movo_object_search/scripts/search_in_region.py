@@ -198,6 +198,7 @@ def start_pcl_process(save_path, detect_ar=False):
     assert type(mark_nearby) == bool
     marker_topic = get_param("marker_topic") #"/movo_pcl_processor/observation_markers"
     point_cloud_topic = get_param("point_cloud_topic")
+    target_object_ids = set(get_param('target_object_ids'))
     
     optional_args = []
     if detect_ar:
@@ -212,6 +213,7 @@ def start_pcl_process(save_path, detect_ar=False):
                       "--point-cloud-topic", str(point_cloud_topic),
                       "--marker-topic", str(marker_topic),
                       "--resolution", str(search_space_resolution),
+                      "--target-ids", list_arg(target_object_ids),
                       "--fov", str(fov),
                       "--asp", str(asp),
                       "--near", str(near),
