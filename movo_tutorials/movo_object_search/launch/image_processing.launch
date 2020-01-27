@@ -1,14 +1,19 @@
 <?xml version="1.0" ?>
 <launch>
-  <arg name="res_info" default="hd"/>
-  <arg name="res_depth" default="qhd"/>  
-  <arg name="camera_info_topic" default="/movo_camera/$(arg res_info)/camera_info"/>
-  <arg name="camera_compressed_image_topic" default="/movo_camera/$(arg res_depth)/image_depth_rect"/>
-  <arg name="camera_image_topic" default="/image_transport/depth_image_raw"/>
+  <arg name="res_info" default="sd"/>
+  <arg name="res_depth" default="sd"/>  
+  <arg name="camera_info_topic" default="movo_camera/$(arg res_info)/camera_info"/>
+  <arg name="camera_compressed_image_topic" default="movo_camera/$(arg res_depth)/image_depth_rect"/>
+  <arg name="camera_image_topic" default="image_transport/depth_image_raw"/>
 
   <!-- Nodelet manager for this pipeline -->
   <node pkg="nodelet" type="nodelet" args="manager"
         name="cloudify_manager" output="screen"/>
+
+  <!-- Launch camera info publisher -->
+  <!-- <node pkg="movo_object_search" type="camera_info_publisher" -->
+  <!--       args="_res:=$(arg res_info)" -->
+  <!--       name="camera_info_publisher" output="screen"/> -->
 
   <!-- Start image_transport republisher and depth_image_proc -->
   <node pkg="topic_tools" type="relay" name="relay_camera_info"
@@ -17,14 +22,13 @@
         output="screen"
         args="compressed in:=$(arg camera_compressed_image_topic)
              raw out:=$(arg camera_image_topic)">
-    <remap from="camera_info" to="$(arg camera_info_topic)"/>
   </node>
 
   <!-- Start the depth_image_proc -->
   <node pkg="nodelet" type="nodelet" name="cloudify_depth"
-        args="load depth_image_proc/point_cloud_xyz cloudify_manager"
+        args="load depth_image_proc/point_cloud_xyz cloudify_manager --no-bond"
         output="screen">
-    <remap from="camera_info" to="$(arg camera_info_topic)"/>
-    <remap from="image_rect" to="$(arg camera_image_topic)"/>
-  </node>
+    <remap from="camera_info" to="/image_transport/camera_info"/> <!--$(arg camera_info_topic)"/> -->
+    <remap from="image_rect" to="/image_transport/depth_image_raw"/>
+  </node> 
 </launch>
