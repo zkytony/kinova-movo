@@ -146,10 +146,10 @@ def execute_action(action_info,
             start_pcl_process(save_path=vpath,
                               detect_ar=False)
             # wait until files are present
-            wait_time = max(1, get_param('observation_wait_time') - 3)
+            wait_time = max(1, get_param('point_cloud_wait_time'))
             observation_saved = False
             while rospy.Time.now() - start_time < rospy.Duration(wait_time):
-                if os.path.exists(vpath):
+                if os.path.exists(vpath_ar):
                     observation_saved = True
                     break
                 rospy.loginfo("Waiting for voxel observation file.")
@@ -161,9 +161,14 @@ def execute_action(action_info,
                 rospy.loginfo("Using the voxels that may contain AR tag labels.")
                 with open(vpath_ar) as f:
                     voxels = yaml.safe_load(f)
-            else:
+            elif os.path.exists(vpath_ar):
                 with open(vpath) as f:
                     voxels = yaml.safe_load(f)
+            else:
+                rospy.logwarn("No volumetric observation was ever recieved within wait time=%ds. Action FAILED." % wait_time)
+                obs_info["status"] = "failed"
+                voxels = {}
+                
             obs_info["camera_direction"] = orientation  # consistent with transition model.
             obs_info["voxels"] = voxels # volumetric observation; (from voxel id (int) to (voxel_pose, label)!
         else:
@@ -248,8 +253,8 @@ def main():
 
     # This is the json region file
     regions_file = get_param("regions_file")
-    # region_name = get_param("region_name")
-    region_name = "shelf-corner"
+    region_name = get_param("region_name")  # specify by _region_name:="shelf-corner"
+    # region_name = "shelf-corner"
     with open(regions_file) as f:
         data = json.load(f)
         region_data = data["regions"][region_name]
