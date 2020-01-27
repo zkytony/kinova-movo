@@ -7,6 +7,7 @@ import rospy
 import actionlib
 import math
 import random
+import sys
 from action.head_and_torso import HeadJTAS, TorsoJTAS
 from control_msgs.msg import JointTrajectoryControllerState
 from sensor_msgs.msg import JointState
@@ -38,10 +39,26 @@ def wait_for_head():
     return cur_pan, cur_tilt
 
 def main():
+    if len(sys.argv) != 1 and len(sys.argv) != 3 and len(sys.argv) != 5:
+        print("Usage %s [-t tilt] [-T torso]" % sys.argv[0])
+        return
+
+    tilt = 0
+    torso = 0.05
+    if len(sys.argv) > 1:
+        if sys.argv[1] == "-t":
+            tilt = float(sys.argv[2])
+        elif sys.argv[1] == "-T":
+            torso = float(sys.argv[2])
+        if len(sys.argv) > 3:
+            if sys.argv[3] == "-t":
+                tilt = float(sys.argv[4])
+            elif sys.argv[3] == "-T":
+                torso = float(sys.argv[4])
     rospy.init_node('movo_search_object_init')
     print("---head---")
     print(tuple(map(to_deg, wait_for_head())))
-    HeadJTAS.move(to_rad(0), to_rad(0))
+    HeadJTAS.move(to_rad(0), to_rad(tilt))
     print(tuple(map(to_deg, wait_for_head())))
     
     print("---torso---")
@@ -50,7 +67,7 @@ def main():
     if torso_topic not in rostopics:
         torso_topic =  "/movo/linear_actuator/joint_states"
     print(wait_for_torso_height(torso_topic=torso_topic))
-    TorsoJTAS.move(0.05, torso_topic=torso_topic)
+    TorsoJTAS.move(torso, torso_topic=torso_topic)
     print(wait_for_torso_height(torso_topic=torso_topic))
 
 if __name__ == "__main__":
