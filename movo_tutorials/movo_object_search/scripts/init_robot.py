@@ -41,7 +41,7 @@ def main():
     rospy.init_node('movo_search_object_init')
     print("---head---")
     print(tuple(map(to_deg, wait_for_head())))
-    HeadJTAS.move(to_rad(0), to_rad(-15))
+    HeadJTAS.move(to_rad(0), to_rad(0))
     print(tuple(map(to_deg, wait_for_head())))
     
     print("---torso---")
@@ -50,7 +50,7 @@ def main():
     if torso_topic not in rostopics:
         torso_topic =  "/movo/linear_actuator/joint_states"
     print(wait_for_torso_height(torso_topic=torso_topic))
-    TorsoJTAS.move(0.6, torso_topic=torso_topic)
+    TorsoJTAS.move(0.05, torso_topic=torso_topic)
     print(wait_for_torso_height(torso_topic=torso_topic))
 
 if __name__ == "__main__":
