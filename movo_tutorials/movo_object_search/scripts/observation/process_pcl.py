@@ -22,8 +22,6 @@ VOXEL_OCCUPIED = "occupied"
 VOXEL_FREE = "free"
 VOXEL_UNKNOWN = "unknown"
 
-#DEPRECATED! This module is too expensive --> Requires processing raw point cloud which is infeasible over WiFi conectinons.
-#ALSO, it does not take into account of marker size (i.e. you can't have multiple marker sizes)
 # A very good ROS Ask question about the point cloud message
 # https://answers.ros.org/question/273182/trying-to-understand-pointcloud2-msg/
 class PCLProcessor:
@@ -37,10 +35,7 @@ class PCLProcessor:
     def __init__(self,
                  # frustum camera configuration
                  target_ids=None,
-                 # marker_size=0.05,  # This actually won't affect detection,
-                 #                    # which is already done by aruco. This
-                 #                    # setting is just a differentiator between
-                 #                    # different aruco nodes that detect different sizes.
+                 marker_class=1, # Marker class->size: 1=0.05, 2=0.10
                  fov=90,
                  aspect_ratio=1,
                  near=1,
@@ -48,7 +43,9 @@ class PCLProcessor:
                  resolution=0.5,  # m/grid cell
                  pcl_topic="/movo_camera/point_cloud/points",
                  marker_topic="/movo_pcl_processor/observation_markers",
-                 artag_topic="/aruco_marker_publisher/markers",  # Tip: Should be suffixed by marker size to allow detecting multiple marker sizes (is this necessary though?)
+                 # Following two creates e.g. /aruco_marker_publisher_{marker_class}/markers                 
+                 aruco_node_name="aruco_marker_publisher",
+                 aruco_sub_topic="markers",                 
                  voxel_marker_frame="movo_camera_color_optical_frame",
                  world_frame="map",
                  sparsity=1000,
@@ -79,6 +76,7 @@ class PCLProcessor:
         # in case there is no AR tag detected.
         self._sub_pcl = message_filters.Subscriber(pcl_topic, PointCloud2)
         if self._mark_ar_tag:
+            artag_topic = "%s_%s/%s" % (aruco_node_name, str(marker_class), aruco_sub_topic)
             self._sub_artag = message_filters.Subscriber(artag_topic, ArMarkerArray)
             self._pcl_artag_ats = message_filters.ApproximateTimeSynchronizer([self._sub_pcl, self._sub_artag],
                                                                               20, 3)#queue_size=10, slop=1.0)
@@ -356,7 +354,7 @@ def main():
     parser.add_argument('-f', '--save-path', type=str)
     parser.add_argument('--quit-when-saved', action="store_true")    
     parser.add_argument('-p', '--point-cloud-topic', type=str,
-                        default="/movo_camera/sd/points")
+                        default="/points")
     parser.add_argument('-m', '--marker-topic', type=str,
                         default="/movo_pcl_processor/observation_markers")
     parser.add_argument('-M', '--mark-ar-tag', action="store_true")
