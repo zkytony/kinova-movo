@@ -206,7 +206,7 @@ def execute_action(action_info,
             obs_info["status"] = "failed"
             obs_info["camera_direction"] = None  # consistent with transition model.
             obs_info["voxels"] = {}
-            rospy.logerror("No observation received because desired rotation not reached.")
+            rospy.logerr("No observation received because desired rotation not reached.")
         rospy.set_param("pcl_process_%d_done" % action_info["step"], True)
 
 
@@ -374,7 +374,7 @@ def main():
     robot_state = {"objects_found": set({})}
     last_action_observation = (None, None)
     step = 0
-    while True:
+    while not rospy.is_shutdown():
         rospy.loginfo("Waiting for action...(t=%d)" % step)
         start_time = rospy.Time.now()
         observation = None
