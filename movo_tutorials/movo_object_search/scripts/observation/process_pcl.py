@@ -100,11 +100,12 @@ class PCLProcessor:
             voxels = self.process_cloud(msg, is_ar=False)
             # saving
             if self._save_path is not None:
-                wf_voxels = self._transform_worldframe(voxels)
-                with open(self._save_path, "w") as f:
-                    yaml.safe_dump(wf_voxels, f)
-                    if self._quit_when_saved:
-                        self._quit = True
+                self._save_processed_voxels(self, voxels, self._save_path, is_ar=False)
+                # wf_voxels = self._transform_worldframe(voxels)
+                # with open(self._save_path, "w") as f:
+                #     yaml.safe_dump(wf_voxels, f)
+                #     if self._quit_when_saved:
+                #         self._quit = True
             # publish message
             msg = self.make_markers_msg(voxels)
             r = rospy.Rate(3) # 3 Hz
@@ -152,11 +153,12 @@ class PCLProcessor:
 
             # saving
             if self._save_path is not None:
-                wf_voxels = self._transform_worldframe(voxels)
-                with open(self._save_path, "w") as f:
-                    yaml.safe_dump(wf_voxels, f)
-                    if self._quit_when_saved:
-                        self._quit = True
+                self._save_processed_voxels(self, voxels, self._save_path, is_ar=True)
+                # wf_voxels = self._transform_worldframe(voxels)
+                # with open(self._save_path, "w") as f:
+                #     yaml.safe_dump(wf_voxels, f)
+                #     if self._quit_when_saved:
+                #         self._quit = True
                         
             msg = self.make_markers_msg(voxels)
             # publish message
@@ -213,6 +215,20 @@ class PCLProcessor:
             wf_voxels[i] = (wf_pose, voxels[voxel_pose][1])
             i += 1
         return wf_voxels
+
+    def _save_processed_voxels(self, voxels, save_path, is_ar=False):
+        wf_voxels = self._transform_worldframe(voxels)
+        ar_note = "_ar" if is_ar else ""
+        with open(save_path, "w") as f:
+            yaml.safe_dump(wf_voxels, f)
+
+            # signals file save done; This signal is only for non-ar voxels (which are listened to first)
+            with open(os.path.join(os.path.dirname(save_path),
+                                   "vdone%s.txt" % ar_note), "w") as f:
+                f.write("Voxels%s written." % ar_note)
+                
+            if self._quit_when_saved:
+                self._quit = True
             
 
     def process_cloud(self, msg, is_ar=False):

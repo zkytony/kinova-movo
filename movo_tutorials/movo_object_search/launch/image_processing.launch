@@ -30,5 +30,6 @@
         output="screen">
     <remap from="camera_info" to="/image_transport/camera_info"/> <!--$(arg camera_info_topic)"/> -->
     <remap from="image_rect" to="/image_transport/depth_image_raw"/>
+    <param name="queue_size" value="10"/>
   </node> 
 </launch>
