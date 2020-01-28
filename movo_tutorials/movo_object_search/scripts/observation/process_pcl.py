@@ -93,7 +93,7 @@ class PCLProcessor:
 
     def _pcl_cb(self, msg):
         # We just process one point cloud message at a time.
-        if self._processing_point_cloud:
+        if self._processing_point_cloud or self._quit:
             return
         else:
             self._processing_point_cloud = True
@@ -115,7 +115,7 @@ class PCLProcessor:
 
     def _pcl_artag_cb(self, pcl_msg, artag_msg):
         """Called when received an artag message and a point cloud."""
-        if self._processing_point_cloud:
+        if self._processing_point_cloud or self._quit:
             return
         else:
             self._processing_point_cloud = True
@@ -408,9 +408,9 @@ def main():
                         mark_ar_tag=args.mark_ar_tag,
                         save_path=args.save_path,
                         quit_when_saved=args.quit_when_saved)
-    while not proc._quit:
-        rospy.spin()
+    rate = rospy.Rate(.5)    
+    while not (proc._quit or rospy.is_shutdown()):
+        rate.sleep()
 
 if __name__ == "__main__":
     main()
-o

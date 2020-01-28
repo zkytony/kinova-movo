@@ -18,6 +18,7 @@ regions_file: "/home/kaiyuzh/movo_ws/src/movo_tutorials/movo_object_search/maps/
 prior_file: "/home/kaiyuzh/movo_ws/src/movo_tutorials/movo_object_search/config/yaml/prior.yaml"
 observation_file: "/home/kaiyuzh/movo_ws/src/movo_tutorials/movo_object_search/tmp/obs_info.yaml"
 action_file: "/home/kaiyuzh/movo_ws/src/movo_tutorials/movo_object_search/tmp/action_info.yaml"
+done_file: "/home/kaiyuzh/movo_ws/src/movo_tutorials/movo_object_search/tmp/done.txt"  # Just to signal observation writing is done.
 
 # topics
 robot_pose_topic: "/amcl_pose"
@@ -48,7 +49,7 @@ goal_tolerance: 0.3
 fov: 60
 aspect_ratio: 1.0
 near: 0.1
-far: 7.0
+far: 8.0
 
 # real observation model parameters
 sparsity: 500
@@ -58,4 +59,4 @@ mark_nearby: true
 # communication wait time
 action_wait_time: 60
 observation_wait_time: 240
-point_cloud_wait_time: 20
+point_cloud_wait_time: 25

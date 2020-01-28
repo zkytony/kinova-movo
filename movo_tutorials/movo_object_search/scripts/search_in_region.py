@@ -79,7 +79,7 @@ def execute_action(action_info,
             rospy.logwarn("FAILED TO APPLY MOTION ACTION")
             obs_info["status"] = "failed"
         obs_info["robot_pose"] = wait_for_robot_pose()
-        obs_info["torso_height"] = wait_for_torso_height()  # provides z pose.
+        # obs_info["torso_height"] = wait_for_torso_height()  # provides z pose.
         obs_info["objects_found"] = robot_state["objects_found"]
         obs_info["camera_direction"] = None  # consistent with transition model.
 
@@ -98,7 +98,7 @@ def execute_action(action_info,
         # Get observation about robot state
         obs_info["status"] = "success"
         obs_info["robot_pose"] = wait_for_robot_pose()
-        obs_info["torso_height"] = actual_height  # provides z pose.
+        # obs_info["torso_height"] = actual_height  # provides z pose.
         obs_info["objects_found"] = robot_state["objects_found"]
         obs_info["camera_direction"] = None  # consistent with transition model.        
 
@@ -120,7 +120,7 @@ def execute_action(action_info,
         rospy.loginfo("Finished rotation. Now observing...")        
         obs_info["robot_pose"] = wait_for_robot_pose()
         rospy.loginfo("Finished rotation. hello...")        
-        obs_info["torso_height"] = wait_for_torso_height()  # provides z pose.
+        # obs_info["torso_height"] = wait_for_torso_height()  # provides z pose.
         obs_info["objects_found"] = robot_state["objects_found"]
             
         if obs_info["status"] == "success":
@@ -189,6 +189,8 @@ def execute_action(action_info,
                 voxels = last_observation["voxels"]
                 for voxel_pose in voxels:
                     _, label = voxels[voxel_pose]
+                    if label == "free" or label == "occupied" or label == "unknown":
+                        continue
                     if int(label) in target_object_ids:
                         new_objects_found.add(label)
                 obs_info["objects_found"] = robot_state["objects_found"] | new_objects_found
@@ -196,7 +198,7 @@ def execute_action(action_info,
             obs_info["objects_found"] = robot_state["objects_found"]
         # robot state
         obs_info["robot_pose"] = wait_for_robot_pose()
-        obs_info["torso_height"] = wait_for_torso_height()  # provides z pose.
+        # obs_info["torso_height"] = wait_for_torso_height()  # provides z pose.
         obs_info["camera_direction"] = obs_info["robot_pose"][3:]  # consistent with transition model.
     return obs_info
         
@@ -241,8 +243,11 @@ def start_pcl_process(save_path, detect_ar=False):
 def wait_for_robot_pose():
     robot_pose_topic = get_param('robot_pose_topic')
     msg = rospy.wait_for_message(robot_pose_topic, PoseWithCovarianceStamped, timeout=15)
-    robot_pose = read_pose_msg(msg)
-    return robot_pose
+    robot_pose = list(read_pose_msg(msg))
+    torso_height = wait_for_torso_height()
+    # Use torso height as the z coordinate
+    robot_pose[2] = torso_height
+    return tuple(robot_pose)
 
 def wait_for_torso_height():
     torso_topic = get_param('torso_height_topic')  # /movo/linear_actuator/joint_states
