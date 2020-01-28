@@ -143,6 +143,13 @@ def execute_action(action_info,
             start_pcl_process(save_path=vpath_ar,
                               detect_ar=True,
                               step=action_info["step"])
+
+            # Remove existing
+            if os.path.exists(vpath):
+                os.remove(vpath)
+            if os.path.exists(vpath_ar):
+                os.remove(vpath_ar)
+            
             # wait until files are present
             wait_time = max(1, get_param('point_cloud_wait_time'))
             ar_extra_wait_time = max(1, get_param('ar_extra_wait_time'))
@@ -160,13 +167,14 @@ def execute_action(action_info,
                 else:
                     rospy.loginfo("Waiting for voxel observation file.")
                     rospy.sleep(1.0)
-                
+
             if observation_saved:
                 rospy.loginfo("Voxel observation saved.")
                 rospy.loginfo("Waiting for several more seconds for AR tag detection.")
-                while rospy.Time.now() - start_time < rospy.Duration(ar_extra_wait_time):
+                start_ar_wait = rospy.Time.now()
+                while rospy.Time.now() - start_ar_wait < rospy.Duration(ar_extra_wait_time):
                     if os.path.exists(vpath_ar):
-                        while rospy.Time.now() - start_time < rospy.Duration(ar_extra_wait_time):
+                        while rospy.Time.now() - start_ar_wait < rospy.Duration(ar_extra_wait_time):
                             if os.path.exists(vdone_path_ar):
                                 # we are good
                                 os.remove(vdone_path_ar)
@@ -182,12 +190,10 @@ def execute_action(action_info,
                 rospy.loginfo("Using the voxels that may contain AR tag labels.")
                 with open(vpath_ar) as f:
                     voxels = yaml.safe_load(f)
-                os.remove(vpath_ar)  # clean this file; already read
             elif os.path.exists(vpath):
                 rospy.loginfo("Loading saved voxels..")
                 with open(vpath) as f:
                     voxels = yaml.safe_load(f)
-                os.remove(vpath)  # clean this file; already read                    
             else:
                 rospy.logwarn("No volumetric observation was ever recieved within wait time=%ds. Action FAILED." % wait_time)
                 obs_info["status"] = "failed"

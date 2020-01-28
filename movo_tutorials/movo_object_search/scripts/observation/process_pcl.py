@@ -13,6 +13,7 @@ import message_filters
 import tf
 import util
 import yaml
+import os
 
 import time
 from camera_model import FrustumCamera
@@ -100,7 +101,7 @@ class PCLProcessor:
             voxels = self.process_cloud(msg, is_ar=False)
             # saving
             if self._save_path is not None:
-                self._save_processed_voxels(self, voxels, self._save_path, is_ar=False)
+                self._save_processed_voxels(voxels, self._save_path, is_ar=False)
                 # wf_voxels = self._transform_worldframe(voxels)
                 # with open(self._save_path, "w") as f:
                 #     yaml.safe_dump(wf_voxels, f)
@@ -153,7 +154,7 @@ class PCLProcessor:
 
             # saving
             if self._save_path is not None:
-                self._save_processed_voxels(self, voxels, self._save_path, is_ar=True)
+                self._save_processed_voxels(voxels, self._save_path, is_ar=True)
                 # wf_voxels = self._transform_worldframe(voxels)
                 # with open(self._save_path, "w") as f:
                 #     yaml.safe_dump(wf_voxels, f)

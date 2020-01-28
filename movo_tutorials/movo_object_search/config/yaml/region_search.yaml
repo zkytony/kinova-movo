@@ -59,4 +59,5 @@ mark_nearby: true
 # communication wait time
 action_wait_time: 60
 observation_wait_time: 240
-point_cloud_wait_time: 25
+point_cloud_wait_time: 30
+ar_extra_wait_time: 7
