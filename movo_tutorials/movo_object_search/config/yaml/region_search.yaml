@@ -24,7 +24,7 @@ robot_pose_topic: "/amcl_pose"
 torso_height_topic: "/movo/linear_actuator/joint_states" #x/movo/torso_controller/state"
 head_topic: "/movo/head_controller/state"
 marker_topic: "/movo_pcl_processor/observation_markers"
-point_cloud_topic: "/kinect2/sd/points"
+point_cloud_topic: "/points"
 
 # # target objects
 # target_object_ids:
@@ -57,4 +57,5 @@ mark_nearby: true
 
 # communication wait time
 action_wait_time: 60
-observation_wait_time: 120
+observation_wait_time: 240
+point_cloud_wait_time: 20

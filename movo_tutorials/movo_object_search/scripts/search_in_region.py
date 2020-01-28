@@ -161,7 +161,7 @@ def execute_action(action_info,
                 rospy.loginfo("Using the voxels that may contain AR tag labels.")
                 with open(vpath_ar) as f:
                     voxels = yaml.safe_load(f)
-            elif os.path.exists(vpath_ar):
+            elif os.path.exists(vpath):
                 with open(vpath) as f:
                     voxels = yaml.safe_load(f)
             else:
@@ -308,24 +308,29 @@ def main():
     # Listen to robot pose
     robot_pose = wait_for_robot_pose()
 
-    subprocess.Popen([VENV_PYTHON, POMDP_SCRIPT,
-                      # arguments
+    cmd = [VENV_PYTHON, POMDP_SCRIPT,
+           # arguments
                       topo_map_file,
-                      list_arg(robot_pose),
-                      str(search_space_dimension),
-                      list_arg(target_object_ids),
-                      list_arg(region_origin),
-                      str(search_space_resolution),
-                      action_file,
-                      observation_file,
-                      "--torso-min", str(torso_min),
-                      "--torso-max", str(torso_max),
-                      "--wait-time", str(observation_wait_time),
-                      "--prior-file", prior_file,
-                      "--fov", str(fov),
-                      "--asp", str(asp),
-                      "--near", str(near),
-                      "--far", str(far)])
+           list_arg(robot_pose),
+           str(search_space_dimension),
+           list_arg(target_object_ids),
+           list_arg(region_origin),
+           str(search_space_resolution),
+           action_file,
+           observation_file,
+           "--torso-min", str(torso_min),
+           "--torso-max", str(torso_max),
+           "--wait-time", str(observation_wait_time),
+           "--prior-file", prior_file,
+           "--fov", str(fov),
+           "--asp", str(asp),
+           "--near", str(near),
+           "--far", str(far)]
+    rospy.loginfo("Starting POMDP with the following command:\n%s"
+                  % subprocess.list2cmdline(cmd))
+    return
+
+    subprocess.Popen(cmd)
     
     # Wait for an action and execute this action
     robot_state = {"objects_found": set({})}
