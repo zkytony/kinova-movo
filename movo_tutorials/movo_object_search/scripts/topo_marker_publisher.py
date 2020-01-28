@@ -211,11 +211,24 @@ class PublishTopoMarkers:
 
 def main():
     rospy.init_node("topo_map_marker_publisher")
-    
+
+    # Test topo map markers
     topo_map_file = get_param("topo_map_file")
     resolution = get_param("resolution")
     PublishTopoMarkers(topo_map_file, resolution)
     rospy.spin()
+
+    # regions_file = get_param("regions_file")
+    # region_name = get_param("region_name")  # specify by _region_name:="shelf-corner"    
+    # with open(regions_file) as f:
+    #     data = json.load(f)
+    #     region_data = data["regions"][region_name]
+    # region_origin = tuple(map(float, region_data["origin"][:2]))
+    # search_space_dimension = int(region_data["dimension"])
+    # search_space_resolution = float(region_data["resolution"])
+    # PublishSearchRegionMarkers(region_origin, search_space_dimension, search_space_resolution)
+    # rospy.spin()
+
 
 if __name__ == "__main__":
     main()

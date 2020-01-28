@@ -356,6 +356,7 @@ class PCLProcessor:
 
 def main():
     parser = argparse.ArgumentParser(description='Process Point Cloud as Volumetric Observation')
+    parser.add_argument('-s', '--plan-step', type=int)
     parser.add_argument('-f', '--save-path', type=str)
     parser.add_argument('--quit-when-saved', action="store_true")    
     parser.add_argument('-p', '--point-cloud-topic', type=str,
@@ -412,8 +413,13 @@ def main():
                         mark_ar_tag=args.mark_ar_tag,
                         save_path=args.save_path,
                         quit_when_saved=args.quit_when_saved)
+    status_param = "pcl_process_%d_done" % int(args.plan_step)
+    
     rate = rospy.Rate(.1)    
     while not (proc._attempts >= NUM_ATTEMPTS or rospy.is_shutdown()):
+        if rospy.has_param(status_param):
+            if rospy.get_param(status_param) == True:
+                break
         rate.sleep()
 
 if __name__ == "__main__":

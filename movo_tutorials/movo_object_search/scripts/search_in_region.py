@@ -142,9 +142,11 @@ def execute_action(action_info,
                 os.remove(vpath_ar)  
             
             start_pcl_process(save_path=vpath_ar,
-                              detect_ar=True)
+                              detect_ar=True,
+                              step=action_info["step"])
             start_pcl_process(save_path=vpath,
-                              detect_ar=False)
+                              detect_ar=False,
+                              step=action_info["step"])
             # wait until files are present
             wait_time = max(1, get_param('point_cloud_wait_time'))
             observation_saved = False
@@ -177,6 +179,7 @@ def execute_action(action_info,
             obs_info["camera_direction"] = None  # consistent with transition model.
             obs_info["voxels"] = {}
             rospy.logerror("No observation received because desired rotation not reached.")
+        rospy.set_param("pcl_process_%d_done" % action_info["step"], True)
 
 
     elif action_info["type"] == ActionType.DetectAction:
@@ -203,7 +206,7 @@ def execute_action(action_info,
     return obs_info
         
         
-def start_pcl_process(save_path, detect_ar=False):
+def start_pcl_process(save_path, detect_ar=False, step=1):  # step: the planning step
     search_space_dimension = get_param('search_space_dimension')
     search_space_resolution = get_param('search_space_resolution')    
     fov = get_param('fov')
@@ -226,6 +229,7 @@ def start_pcl_process(save_path, detect_ar=False):
             optional_args.append("-N")
     
     subprocess.Popen(["rosrun", "movo_object_search", "process_pcl.py",
+                      "--plan-step", str(step),
                       "--save-path", str(save_path),
                       "--quit-when-saved",
                       "--point-cloud-topic", str(point_cloud_topic),
