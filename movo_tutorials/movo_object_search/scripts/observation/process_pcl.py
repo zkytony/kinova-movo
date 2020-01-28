@@ -97,7 +97,7 @@ class PCLProcessor:
             return
         else:
             self._processing_point_cloud = True
-            voxels = self.process_cloud(msg)
+            voxels = self.process_cloud(msg, is_ar=False)
             # saving
             if self._save_path is not None:
                 wf_voxels = self._transform_worldframe(voxels)
@@ -119,7 +119,7 @@ class PCLProcessor:
             return
         else:
             self._processing_point_cloud = True
-            voxels = self.process_cloud(pcl_msg)
+            voxels = self.process_cloud(pcl_msg, is_ar=False)
 
             # Mark voxel at artag location as object
             for artag in artag_msg.markers:
@@ -215,12 +215,13 @@ class PCLProcessor:
         return wf_voxels
             
 
-    def process_cloud(self, msg):
+    def process_cloud(self, msg, is_ar=False):
         # Iterate over the voxels in the FOV
         points = []
         for point in sensor_msgs.point_cloud2.read_points(msg, skip_nans=True):
             points.append(point)
-        rospy.loginfo("(info)[Received %d points in point cloud]" % len(points))
+        ar_note = "  -- ar" if is_ar else ""
+        rospy.loginfo("(info)[Received %d points in point cloud%s]" % (len(points), ar_note))
         voxels = {}  # map from voxel_pose xyz to label
         parallel_occupied = {}
         for volume_voxel_pose in self._cam.volume:
@@ -341,7 +342,7 @@ class PCLProcessor:
                 marker_msg.color.a = 1.0
             else:
                 raise ValueError("Unknown voxel label %s" % str(label))
-            marker_msg.lifetime = rospy.Duration.from_sec(3.0)  # forever
+            marker_msg.lifetime = rospy.Duration.from_sec(7.0)  # forever
             marker_msg.frame_locked = True
             markers.append(marker_msg)
 

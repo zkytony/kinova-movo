@@ -173,6 +173,7 @@ def execute_action(action_info,
             obs_info["voxels"] = voxels # volumetric observation; (from voxel id (int) to (voxel_pose, label)!
         else:
             # robot didn't reach the desired rotation; no observation received
+            obs_info["status"] = "failed"
             obs_info["camera_direction"] = None  # consistent with transition model.
             obs_info["voxels"] = {}
             rospy.logerror("No observation received because desired rotation not reached.")
@@ -279,6 +280,7 @@ def main():
     action_file = get_param('action_file')
     observation_file = get_param('observation_file')
     prior_file = get_param('prior_file')
+    done_file = get_param('done_file')
 
     # clear exisiting action/observation files
     if os.path.exists(action_file):
@@ -310,7 +312,7 @@ def main():
 
     cmd = [VENV_PYTHON, POMDP_SCRIPT,
            # arguments
-                      topo_map_file,
+           topo_map_file,
            list_arg(robot_pose),
            str(search_space_dimension),
            list_arg(target_object_ids),
@@ -318,6 +320,7 @@ def main():
            str(search_space_resolution),
            action_file,
            observation_file,
+           done_file,           
            "--torso-min", str(torso_min),
            "--torso-max", str(torso_max),
            "--wait-time", str(observation_wait_time),
@@ -328,8 +331,6 @@ def main():
            "--far", str(far)]
     rospy.loginfo("Starting POMDP with the following command:\n%s"
                   % subprocess.list2cmdline(cmd))
-    return
-
     subprocess.Popen(cmd)
     
     # Wait for an action and execute this action
@@ -354,13 +355,15 @@ def main():
                 robot_state["objects_found"] = obs_info["objects_found"]
                 
                 with open(observation_file, "w") as f:
-                    yaml.safe_dump(obs_info, f)
-                    
+                    yaml.safe_dump(obs_info, f)                    
                 rospy.loginfo("Action executed. Observation written to file %s" % observation_file)
+                with open(done_file, "w") as f:
+                    f.write("done")
+                
                 last_action_observation = (action_info, obs_info)
                 observation_issued = True
 
-                # remove action file
+                # remove action file and done file
                 os.remove(action_file)
                 break  # break the loop                
             else:
