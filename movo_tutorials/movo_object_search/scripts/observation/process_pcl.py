@@ -22,8 +22,6 @@ VOXEL_OCCUPIED = "occupied"
 VOXEL_FREE = "free"
 VOXEL_UNKNOWN = "unknown"
 
-NUM_ATTEMPTS = 3
-
 # A very good ROS Ask question about the point cloud message
 # https://answers.ros.org/question/273182/trying-to-understand-pointcloud2-msg/
 class PCLProcessor:
@@ -68,7 +66,7 @@ class PCLProcessor:
                                   near=near, far=far)
         self._save_path = save_path
         self._quit_when_saved = quit_when_saved
-        self._attempts = 0  # quit when saved >= NUM_ATTEMPTS times.
+        self._quit = False
         
         # Listen to tf
         self._tf_listener = tf.TransformListener()
@@ -95,7 +93,7 @@ class PCLProcessor:
 
     def _pcl_cb(self, msg):
         # We just process one point cloud message at a time.
-        if self._processing_point_cloud or self._attempts >= NUM_ATTEMPTS:
+        if self._processing_point_cloud:
             return
         else:
             self._processing_point_cloud = True
@@ -106,7 +104,6 @@ class PCLProcessor:
                 with open(self._save_path, "w") as f:
                     yaml.safe_dump(wf_voxels, f)
                     if self._quit_when_saved:
-                        self._attempts += 1
                         self._quit = True
             # publish message
             msg = self.make_markers_msg(voxels)
@@ -118,7 +115,7 @@ class PCLProcessor:
 
     def _pcl_artag_cb(self, pcl_msg, artag_msg):
         """Called when received an artag message and a point cloud."""
-        if self._processing_point_cloud or self._attempts >= NUM_ATTEMPTS:
+        if self._processing_point_cloud:
             return
         else:
             self._processing_point_cloud = True
@@ -159,7 +156,6 @@ class PCLProcessor:
                 with open(self._save_path, "w") as f:
                     yaml.safe_dump(wf_voxels, f)
                     if self._quit_when_saved:
-                        self._attempts += 1
                         self._quit = True
                         
             msg = self.make_markers_msg(voxels)
@@ -413,13 +409,12 @@ def main():
                         mark_ar_tag=args.mark_ar_tag,
                         save_path=args.save_path,
                         quit_when_saved=args.quit_when_saved)
-    status_param = "pcl_process_%d_done" % int(args.plan_step)
-    
-    rate = rospy.Rate(.1)    
-    while not (proc._attempts >= NUM_ATTEMPTS or rospy.is_shutdown()):
-        if rospy.has_param(status_param):
-            if rospy.get_param(status_param) == True:
-                break
+    lifetime = rospy.Duration(45)
+    rate = rospy.Rate(.1)
+    start_time = rospy.Time.now()
+    while not (proc._quit or rospy.is_shutdown()):
+        if rospy.Time.now() - start_time >= lifetime:
+            break
         rate.sleep()
 
 if __name__ == "__main__":

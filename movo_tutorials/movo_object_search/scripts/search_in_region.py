@@ -140,12 +140,12 @@ def execute_action(action_info,
                 os.remove(vpath)
             if os.path.exists(vpath_ar):
                 os.remove(vpath_ar)  
-            
-            start_pcl_process(save_path=vpath_ar,
-                              detect_ar=True,
-                              step=action_info["step"])
+
             start_pcl_process(save_path=vpath,
                               detect_ar=False,
+                              step=action_info["step"])                
+            start_pcl_process(save_path=vpath_ar,
+                              detect_ar=True,
                               step=action_info["step"])
             # wait until files are present
             wait_time = max(1, get_param('point_cloud_wait_time'))
