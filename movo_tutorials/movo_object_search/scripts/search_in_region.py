@@ -375,7 +375,7 @@ def main():
                 rospy.loginfo("Waiting for POMDP action...")
                 rospy.sleep(0.5)
         if not observation_issued:
-            rospy.logerror("Timed out waiting for POMDP action.")
+            rospy.logerr("Timed out waiting for POMDP action.")
             break
         if robot_state["objects_found"] == set(target_object_ids):
             rospy.loginfo("Done! All objects found in this region")
