@@ -10,11 +10,6 @@
   <node pkg="nodelet" type="nodelet" args="manager"
         name="cloudify_manager" output="screen"/>
 
-  <!-- Launch camera info publisher -->
-  <!-- <node pkg="movo_object_search" type="camera_info_publisher" -->
-  <!--       args="_res:=$(arg res_info)" -->
-  <!--       name="camera_info_publisher" output="screen"/> -->
-
   <!-- Start image_transport republisher and depth_image_proc -->
   <node pkg="topic_tools" type="relay" name="relay_camera_info"
         args="$(arg camera_info_topic) /image_transport/camera_info" />
