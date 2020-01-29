@@ -36,11 +36,13 @@ point_cloud_topic: "/points"
 # torso
 torso_min: 0.02
 torso_max: 0.55
-torso_low_thres: 0.06 # below this height, the robot will tilt down to look at the floor.
-torso_high_thres: 0.44 # above this height, the robot will tilt up to look at the floor.
-torso_step_size: 0.20
-tilt_up_angles: 15 # tilting up is rotation around x axis
-tilt_down_angles: 40 # tilting up is rotation around x axis
+
+# These are not used
+# torso_low_thres: 0.06 # below this height, the robot will tilt down to look at the floor.
+# torso_high_thres: 0.44 # above this height, the robot will tilt up to look at the floor.
+# torso_step_size: 0.20
+# tilt_up_angles: 15 # tilting up is rotation around x axis
+# tilt_down_angles: 40 # tilting up is rotation around x axis
 
 # navigation
 goal_tolerance: 0.3
