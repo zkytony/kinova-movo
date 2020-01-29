@@ -24,11 +24,11 @@ import yaml
 import math
 import json
 from action.waypoint import WaypointApply
-from action.head_and_torso import TorsoJTAS
+from action.head_and_torso import TorsoJTAS, HeadJTAS
 from action.action_type import ActionType
 from scipy.spatial.transform import Rotation as scipyR
 from topo_marker_publisher import PublishTopoMarkers, PublishSearchRegionMarkers
-from ros_util import get_param
+from ros_util import get_param, get_if_has_param
 
 # Start a separate process to run POMDP; Use the virtualenv
 VENV_PYTHON = "/home/kaiyuzh/pyenv/py37/bin/python"
@@ -229,6 +229,12 @@ def execute_action(action_info,
                 obs_info["objects_found"] = robot_state["objects_found"] | new_objects_found
         else:
             obs_info["objects_found"] = robot_state["objects_found"]
+
+        # Nod head to indicate Detect action called.
+        rospy.loginfo("Detection made. Nodding head...head tilting down")
+        HeadJTAS.move(desired_tilt=-20)
+        rospy.loginfo("Detection made. Nodding head...head tilting back up")
+        HeadJTAS.move(desired_tilt=0)        
         # robot state
         obs_info["robot_pose"] = wait_for_robot_pose()
         # obs_info["torso_height"] = wait_for_torso_height()  # provides z pose.
@@ -287,12 +293,10 @@ def wait_for_torso_height():
     torso_topic = get_param('torso_height_topic')  # /movo/linear_actuator/joint_states
     return TorsoJTAS.wait_for_torso_height(torso_topic=torso_topic)
 
-def main():
-    rospy.init_node("movo_object_search_in_region",
-                    anonymous=True)
-
+########### SEARCH REGION FUNCTION ##########
+def search_region(region_name, regions_file):
     # This is the json region file
-    regions_file = get_param("regions_file")
+
     region_name = get_param("region_name")  # specify by _region_name:="shelf-corner"
     # region_name = "shelf-corner"
     with open(regions_file) as f:
@@ -341,6 +345,9 @@ def main():
     sparsity = get_param("sparsity")
     occupied_threshold = get_param("occupied_threshold")
     mark_nearby = get_param("mark_nearby")
+
+    # execution
+    max_planning_steps = get_param("max_planning_steps")
     
     # publish topo markers
     PublishTopoMarkers(topo_map_file, search_space_resolution)
@@ -412,9 +419,32 @@ def main():
             rospy.logerr("Timed out waiting for POMDP action.")
             break
         if robot_state["objects_found"] == set(target_object_ids):
-            rospy.loginfo("Done! All objects found in this region")
+            rospy.loginfo("Done! All objects found in this region (Num Steps: %d)" % (step+1))
             break
         step += 1
+        if step >= max_planning_steps:
+            rospy.loginfo("Maximum planning step reached for this region. "
+                          "Found %d objects (%s)" % (len(robot_state["objects_found"]),
+                                                     robot_state["objects_found"]))
 
+########### SEQUENTIALLY SEARCH MULTIPLE REGIONS ##########            
+def main():
+    rospy.init_node("movo_object_search_in_region",
+                    anonymous=True)
+
+    regions_file = get_if_has_param("regions_file")
+    regions = get_if_has_param("regions")
+    if regions_file is None:
+        region_name = get_param("region_name")
+        regions = [region_name]
+    else:
+        regions = get_name("regions").split(",")  # list of region names separated by comma.
+
+    # Multiple region search
+    for region_name in regions:
+        rospy.loginfo("[start region search] Start searching in region %s" % region_name)
+        region_name = region_name.strip()
+        search_region(region_name, regions_file)
+    
 if __name__ == "__main__":
     main()
