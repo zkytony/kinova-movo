@@ -170,6 +170,8 @@ def execute_action(action_info,
 
             if observation_saved:
                 rospy.loginfo("Voxel observation saved.")
+
+            if not os.path.exists(vpath_ar):
                 rospy.loginfo("Waiting for several more seconds for AR tag detection.")
                 start_ar_wait = rospy.Time.now()
                 while rospy.Time.now() - start_ar_wait < rospy.Duration(ar_extra_wait_time):
