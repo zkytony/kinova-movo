@@ -62,9 +62,9 @@ class PublishSearchRegionMarkers:
         marker_msg.scale.x = self._region_size
         marker_msg.scale.y = self._region_size
         marker_msg.scale.z = 0.02
-        marker_msg.color.r = 0.2
+        marker_msg.color.r = 0.7
         marker_msg.color.g = 0.7
-        marker_msg.color.b = 0.7
+        marker_msg.color.b = 0.2
         marker_msg.color.a = 0.4            
         marker_msg.lifetime = rospy.Duration(0)  # forever
         marker_msg.frame_locked = True
