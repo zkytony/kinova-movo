@@ -157,7 +157,7 @@ def execute_action(action_info,
             while rospy.Time.now() - start_time < rospy.Duration(wait_time):
                 if os.path.exists(vpath):
                     observation_saved = True
-                    while rospy.Time.now() - start_time < rospy.Duration(wait_time):
+                    while rospy.Time.now() - start_time < rospy.Duration(wait_time + 5):
                         if os.path.exists(vdone_path):
                             os.remove(vdone_path)
                             break
@@ -176,7 +176,7 @@ def execute_action(action_info,
                 start_ar_wait = rospy.Time.now()
                 while rospy.Time.now() - start_ar_wait < rospy.Duration(ar_extra_wait_time):
                     if os.path.exists(vpath_ar):
-                        while rospy.Time.now() - start_ar_wait < rospy.Duration(ar_extra_wait_time):
+                        while rospy.Time.now() - start_ar_wait < rospy.Duration(ar_extra_wait_time + 5):
                             if os.path.exists(vdone_path_ar):
                                 # we are good
                                 os.remove(vdone_path_ar)
