@@ -92,7 +92,7 @@ class PCLProcessor:
         self._pub_pcl = rospy.Publisher(marker_topic,
                                         MarkerArray,
                                         queue_size=10,
-                                        latch=True)
+                                        latch=False)
 
     def _pcl_cb(self, msg):
         # We just process one point cloud message at a time.
@@ -281,6 +281,7 @@ class PCLProcessor:
         rospy.loginfo("(info)[Received %d points in point cloud%s]" % (len(points), ar_note))
         voxels = {}  # map from voxel_pose xyz to label
         parallel_occupied = {}
+        self._cam.print_info()
         for volume_voxel_pose in self._cam.volume:
             # Iterate over the whole point cloud sparsely
             i = 0
@@ -402,7 +403,7 @@ class PCLProcessor:
                 marker_msg.color.a = 1.0
             else:
                 raise ValueError("Unknown voxel label %s" % str(label))
-            marker_msg.lifetime = rospy.Duration.from_sec(0)  # forever
+            marker_msg.lifetime = rospy.Duration.from_sec(5)
             marker_msg.frame_locked = True
             markers.append(marker_msg)
 
