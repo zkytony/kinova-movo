@@ -19,6 +19,7 @@ stuff "cd ~/movo_ws/src/movo_tutorials/movo_object_search; rosparam load config/
 screen -t image_proc
 screen -t rviz
 screen -t blank
+stuff "sudo route add -net 10.66.171.0 netmask 255.255.255.0 gw 138.16.161.17 dev wlp3s0"
 screen -t blank
 screen -t moos3d
 stuff "cd /home/kaiyuzh/repo/3d-moos-pomdp/moos3d; p7"

@@ -1,6 +1,9 @@
 # Lists objects that may be contained within each search region.
 shelf_corner_target_ids:
   - 82
+  - 196
+  - 76
+  - 54
   # - 68
   # - 396
   # - 82
