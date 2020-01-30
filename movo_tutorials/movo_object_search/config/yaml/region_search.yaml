@@ -65,4 +65,4 @@ point_cloud_wait_time: 25
 ar_extra_wait_time: 10
 
 # planning
-max_planning_steps: 50
+max_planning_steps: 30

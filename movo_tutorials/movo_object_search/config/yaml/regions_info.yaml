@@ -1,16 +1,8 @@
-# Lists objects that may be contained within each search region.
 shelf_corner_target_ids:
   - 82
   - 54
   - 396
-# table_area_target_ids:
-#   - 43
-#   - 111
-#   - 196
-#   - 39
-# desktop_corner_target_ids:
-#   - 396
-#   - 56
+  - 23
 whiteboard_area_target_ids:
   - 35
-  - 23
+  # - 23
