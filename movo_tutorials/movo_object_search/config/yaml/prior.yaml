@@ -1,19 +1,44 @@
-# 68:
+82:
+  regions:
+    # The object is on the shelf
+    - pose: [2.0, 2.0, 2.0]
+      belief: 0
+      resolution_level: 8
+    - pose: [2.0, 1.0, 2.0]
+      belief: 0
+      resolution_level: 8
+
+77:
+  regions:
+    # The object is on the shelf
+    - pose: [0.0, 0.0, 2.0]
+      belief: 0
+      resolution_level: 8
+# 23:
 #   regions:
 #     # The object is on the shelf
-#     - pose: [0, 0, 0]
+#     - pose: [2.0, 2.0, 2.0]
 #       belief: 0
-#       resolution_level: 4
-#     - pose: [0, 2, 0]
+#       resolution_level: 8
+#     - pose: [2.0, 4.0, 2.0]
 #       belief: 0
-#       resolution_level: 4
-#     - pose: [2, 0, 0]
+#       resolution_level: 8
+#     - pose: [4.0, 4.0, 2.0]
 #       belief: 0
-#       resolution_level: 4
-#     - pose: [2, 2, 0]
+#       resolution_level: 8
+#     - pose: [4.0, 2.0, 2.0]
 #       belief: 0
-#       resolution_level: 4      
-
+#       resolution_level: 8                        
+    # - pose: [0, 2, 0]
+    #   belief: 0
+    #   resolution_level: 4
+    # - pose: [2, 0, 0]
+    #   belief: 0
+    #   resolution_level: 4
+    # - pose: [2, 2, 0]
+    #   belief: 0
+    #   resolution_level: 4      
+    
 
 # 0:
 #   regions:

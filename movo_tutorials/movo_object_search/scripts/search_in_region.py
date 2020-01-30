@@ -92,6 +92,14 @@ def execute_action(action_info,
         desired_height = torso_height + action_info["displacement"]
         TorsoJTAS.move(desired_height, current_height=torso_height)
 
+        # If torso up, tilt camera up. If torso down, tilt camera down.
+        if action_info["displacement"] > 0:
+            rospy.loginfo("Tilting camera up")
+            HeadJTAS.move(0, to_rad(5), v=0.8)
+        if action_info["displacement"] < 0:
+            rospy.loginfo("Tilting camera down")
+            HeadJTAS.move(0, to_rad(-20), v=0.8)            
+
         # Verify
         actual_height = wait_for_torso_height()
         if abs(actual_height - desired_height) > 1e-2:
@@ -236,9 +244,9 @@ def execute_action(action_info,
 
         # Nod head to indicate Detect action called.
         rospy.loginfo("Detection made. Nodding head...head tilting down")
-        HeadJTAS.move(0, to_rad(-20), v=0.8)
-        rospy.loginfo("Detection made. Nodding head...head tilting back up")
         HeadJTAS.move(0, to_rad(0), v=0.8)
+        rospy.loginfo("Detection made. Nodding head...head tilting back up")
+        HeadJTAS.move(0, to_rad(-20), v=0.8)
         # robot state
         obs_info["robot_pose"] = wait_for_robot_pose()
         # obs_info["torso_height"] = wait_for_torso_height()  # provides z pose.
@@ -299,11 +307,8 @@ def wait_for_torso_height():
 
 ########### SEARCH REGION FUNCTION ##########
 def search_region(region_name, regions_file):
-    # This is the json region file
-
-    region_name = get_param("region_name")  # specify by _region_name:="shelf-corner"
-    # region_name = "shelf-corner"
     with open(regions_file) as f:
+        # This is the json region file
         data = json.load(f)
         region_data = data["regions"][region_name]
     region_origin = tuple(map(float, region_data["origin"][:2]))
@@ -366,6 +371,9 @@ def search_region(region_name, regions_file):
         rospy.logerr("Waypoint to %d failed" % nid)
         return
 
+    # tilt head
+    HeadJTAS.move(0, to_rad(-20), v=0.8)    
+
     # Listen to robot pose
     robot_pose = wait_for_robot_pose()
 
@@ -407,24 +415,24 @@ def search_region(region_name, regions_file):
                 with open(action_file) as f:
                     action_info = yaml.load(f)
 
-                # observation obtained from robot                    
-                obs_info = execute_action(action_info,  
-                                          robot_state,
-                                          last_action_observation)
-                robot_state["objects_found"] = obs_info["objects_found"]
-                
-                with open(observation_file, "w") as f:
-                    yaml.safe_dump(obs_info, f)                    
-                rospy.loginfo("Action executed. Observation written to file %s" % observation_file)
-                with open(done_file, "w") as f:
-                    f.write("done")
-                
-                last_action_observation = (action_info, obs_info)
-                observation_issued = True
+                    # observation obtained from robot                    
+                    obs_info = execute_action(action_info,  
+                                              robot_state,
+                                              last_action_observation)
+                    robot_state["objects_found"] = obs_info["objects_found"]
 
-                # remove action file and done file
-                os.remove(action_file)
-                break  # break the loop                
+                    with open(observation_file, "w") as f:
+                        yaml.safe_dump(obs_info, f)                    
+                    rospy.loginfo("Action executed. Observation written to file %s" % observation_file)
+                    with open(done_file, "w") as f:
+                        f.write("done")
+
+                    last_action_observation = (action_info, obs_info)
+                    observation_issued = True
+
+                    # remove action file and done file
+                    os.remove(action_file)
+                    break  # break the loop
             else:
                 rospy.loginfo("Waiting for POMDP action...")
                 rospy.sleep(0.5)

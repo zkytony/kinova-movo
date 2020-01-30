@@ -35,7 +35,7 @@ point_cloud_topic: "/points"
 
 # torso
 torso_min: 0.02
-torso_max: 0.55
+torso_max: 0.51
 
 # These are not used
 # torso_low_thres: 0.06 # below this height, the robot will tilt down to look at the floor.
