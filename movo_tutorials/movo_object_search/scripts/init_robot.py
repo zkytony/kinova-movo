@@ -58,7 +58,7 @@ def main():
     rospy.init_node('movo_search_object_init')
     print("---head---")
     print(tuple(map(to_deg, wait_for_head())))
-    HeadJTAS.move(to_rad(0), to_rad(tilt))
+    HeadJTAS.move(to_rad(0), to_rad(tilt), v=0.8)
     print(tuple(map(to_deg, wait_for_head())))
     
     print("---torso---")

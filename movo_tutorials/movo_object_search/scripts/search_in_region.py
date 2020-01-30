@@ -34,6 +34,9 @@ from ros_util import get_param, get_if_has_param
 VENV_PYTHON = "/home/kaiyuzh/pyenv/py37/bin/python"
 POMDP_SCRIPT = "/home/kaiyuzh/repo/3d-moos-pomdp/moos3d/robot_demo/build_pomdp.py"
 
+def to_rad(deg):
+    return math.pi * deg / 180.0
+
 def euclidean_dist(p1, p2):
     return math.sqrt(sum([(a - b)** 2 for a, b in zip(p1, p2)]))
 
@@ -232,9 +235,9 @@ def execute_action(action_info,
 
         # Nod head to indicate Detect action called.
         rospy.loginfo("Detection made. Nodding head...head tilting down")
-        HeadJTAS.move(desired_tilt=-20)
+        HeadJTAS.move(0, to_rad(-20), v=0.8)
         rospy.loginfo("Detection made. Nodding head...head tilting back up")
-        HeadJTAS.move(desired_tilt=0)        
+        HeadJTAS.move(0, to_rad(0), v=0.8)
         # robot state
         obs_info["robot_pose"] = wait_for_robot_pose()
         # obs_info["torso_height"] = wait_for_torso_height()  # provides z pose.
@@ -303,6 +306,7 @@ def search_region(region_name, regions_file):
         data = json.load(f)
         region_data = data["regions"][region_name]
     region_origin = tuple(map(float, region_data["origin"][:2]))
+    access_point = tuple(map(float, region_data["access"][:2]))
     search_space_dimension = int(region_data["dimension"])
     search_space_resolution = float(region_data["resolution"])
     rospy.set_param("search_space_dimension", search_space_dimension)
@@ -352,6 +356,14 @@ def search_region(region_name, regions_file):
     # publish topo markers
     PublishTopoMarkers(topo_map_file, search_space_resolution)
     PublishSearchRegionMarkers(region_origin, search_space_dimension, search_space_resolution)
+
+    # Move to access point
+    rospy.loginfo("Navigating to access point of region %s at %s"
+                  % (region_name, str(access_point)))
+    posit, orien = access_point, (0,0,0,1)
+    if WaypointApply(posit, orien).status != WaypointApply.Status.SUCCESS:
+        rospy.logerr("Waypoint to %d failed" % nid)
+        return
 
     # Listen to robot pose
     robot_pose = wait_for_robot_pose()
@@ -434,11 +446,11 @@ def main():
 
     regions_file = get_if_has_param("regions_file")
     regions = get_if_has_param("regions")
-    if regions_file is None:
+    if regions is None:
         region_name = get_param("region_name")
         regions = [region_name]
     else:
-        regions = get_name("regions").split(",")  # list of region names separated by comma.
+        regions = get_param("regions").split(",")  # list of region names separated by comma.
 
     # Multiple region search
     for region_name in regions:
@@ -446,5 +458,5 @@ def main():
         region_name = region_name.strip()
         search_region(region_name, regions_file)
     
-if __name__ == "__main__":
+if __name__ == "__main__":    
     main()

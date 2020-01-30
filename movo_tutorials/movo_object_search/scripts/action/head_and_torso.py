@@ -78,7 +78,9 @@ class HeadJTAS(object):
         return cur_pan, cur_tilt
 
     @classmethod
-    def move(cls, desired_pan, desired_tilt, head_topic="/movo/head_controller/state"):
+    def move(cls, desired_pan, desired_tilt,
+             head_topic="/movo/head_controller/state",
+             v=0.3):
         """desired_pan, desired_tilt (radian) are angles of pan and tilt joints of the head"""
         msg = rospy.wait_for_message(head_topic, JointTrajectoryControllerState, timeout=15)
         assert msg.joint_names[0] == 'pan_joint', "Joint is not head joints (need pan or tilt)."
@@ -90,17 +92,17 @@ class HeadJTAS(object):
         traj_head.add_point([cur_pan, cur_tilt], 0.0)
         # First pan
         if desired_pan < cur_pan:
-            vel = -0.3
+            vel = -v
         else:
-            vel = 0.3
+            vel = v
         dt = abs(abs(desired_pan - cur_pan) / vel)
         total_time_head += dt
         traj_head.add_point([desired_pan, cur_tilt],total_time_head)
         # then tilt
         if desired_tilt < cur_tilt:
-            vel = -0.3
+            vel = -v
         else:
-            vel = 0.3
+            vel = v
         dt = abs(abs(desired_tilt - cur_tilt) / vel)
         total_time_head += dt        
         traj_head.add_point([desired_pan, desired_tilt],total_time_head)                    
@@ -167,7 +169,9 @@ class TorsoJTAS(object):
         
 
     @classmethod
-    def move(cls, desired_height, current_height=None, torso_topic="/movo/torso_controller/state"):
+    def move(cls, desired_height, current_height=None,
+             torso_topic="/movo/torso_controller/state",
+             v=0.05):
         # get current position
         if current_height is None:
             current_height = TorsoJTAS.wait_for_torso_height(torso_topic=torso_topic)
@@ -175,9 +179,9 @@ class TorsoJTAS(object):
         total_time_torso = 0.0
         traj_torso.add_point([current_height], 0.0)
         if desired_height < current_height:
-            vel = -0.05
+            vel = -v
         else:
-            vel = 0.05
+            vel = v
         dt = abs(abs(desired_height - current_height) / vel)
         total_time_torso += dt
         traj_torso.add_point([desired_height],total_time_torso)
