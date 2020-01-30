@@ -464,6 +464,7 @@ def main():
         objects_found, step = search_region(region_name, regions_file)
         results[region_name] = {"objects_found": objects_found,
                                 "steps_taken": step}
+
     pprint(results)
     
 if __name__ == "__main__":    
