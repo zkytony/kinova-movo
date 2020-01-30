@@ -34,3 +34,6 @@ def main():
     
 if __name__ == "__main__":
     main()
+
+# command to run:
+#    rosrun movo_object_search search_in_region.py _regions:="table-area,desktop-area,shelf-corner,whiteboard-area"

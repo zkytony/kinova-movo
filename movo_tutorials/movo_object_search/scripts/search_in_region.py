@@ -29,6 +29,7 @@ from action.action_type import ActionType
 from scipy.spatial.transform import Rotation as scipyR
 from topo_marker_publisher import PublishTopoMarkers, PublishSearchRegionMarkers
 from ros_util import get_param, get_if_has_param
+from pprint import pprint
 
 # Start a separate process to run POMDP; Use the virtualenv
 VENV_PYTHON = "/home/kaiyuzh/pyenv/py37/bin/python"
@@ -438,6 +439,8 @@ def search_region(region_name, regions_file):
             rospy.loginfo("Maximum planning step reached for this region. "
                           "Found %d objects (%s)" % (len(robot_state["objects_found"]),
                                                      robot_state["objects_found"]))
+    return robot_state["objects_found"], step
+
 
 ########### SEQUENTIALLY SEARCH MULTIPLE REGIONS ##########            
 def main():
@@ -452,11 +455,16 @@ def main():
     else:
         regions = get_param("regions").split(",")  # list of region names separated by comma.
 
+    results = {}
+
     # Multiple region search
     for region_name in regions:
         rospy.loginfo("[start region search] Start searching in region %s" % region_name)
         region_name = region_name.strip()
-        search_region(region_name, regions_file)
+        objects_found, step = search_region(region_name, regions_file)
+        results[region_name] = {"objects_found": objects_found,
+                                "steps_taken": step}
+    pprint(results)
     
 if __name__ == "__main__":    
     main()
