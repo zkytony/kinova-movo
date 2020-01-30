@@ -47,22 +47,21 @@
     - pose: [1.0, 1.0, 2.0]
       belief: 0
       resolution_level: 8
-    - pose: [1.0, 2.0, 2.0]
+    - pose: [2.5, 3.5, 2.0]
       belief: 0
       resolution_level: 8
-    - pose: [2.0, 1.0, 2.0]
+    - pose: [1.0, 3.5, 2.0]
       belief: 0
       resolution_level: 8            
 
-
-54:
-  regions:
-    - pose: [2.0, 2.0, 2.0]
-      belief: 0
-      resolution_level: 8
-
 82:
   regions:
+    - pose: [2.5, 3.5, 2.0]
+      belief: 0
+      resolution_level: 8
+    - pose: [1.0, 3.5, 2.0]
+      belief: 0
+      resolution_level: 8            
     - pose: [2.0, 2.0, 2.0]
       belief: 0
       resolution_level: 8
