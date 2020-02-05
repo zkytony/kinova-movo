@@ -60,3 +60,6 @@ CATKIN_IGNORE
 #### OTHER PACKAGES (they have their own repo)
 sara_mapping/
 movo_tutorials/movo_object_search/tmp
+movo_tutorials/movo_object_search/assets/aruco*
+movo_tutorials/movo_object_search/maps/*.png
+movo_tutorials/movo_object_search/maps/*.xcf
